@@ -1,5 +1,6 @@
 #include "../headers/config_wr.h"
 #include <stdlib.h>
+#include <cstdext/estring.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <dirent.h>
@@ -40,6 +41,11 @@ Config_main *Config_read_config() {
 
     arraylist *conf_cont = arraylistFromFile(path_to_conf);
     for(i32 i = 0; i < conf_cont->len; i++) {
+        i32 find = strFind(arraylistGet(conf_cont, i), "working_dir:", 0);
+        if (find != -1) {
+            //TODO (maxim) implemet after strSubString will be written
+            // str working_dir = strSubString();
+        }
 
     }
 
