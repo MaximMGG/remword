@@ -1,12 +1,11 @@
 MAIN = mem
-SRC = $(wildcard ./*.c)
+SRC = $(wildcard ./src/*.c)
 OBJ = $(patsubst %.c, %.o, $(SRC))
 
 $(MAIN): $(OBJ)
-	gcc -o $@ $^
-
+	gcc -o $@ $^ -lcstd
 debug:
-	gcc -o $(MAIN) $(OBJ) -g
+	gcc -o $(MAIN) $(OBJ) -lcstd -g
 
 %.o: %.c
 	gcc -o $@ -c $<

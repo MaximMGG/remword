@@ -204,9 +204,9 @@ void main_menu(Config_main *conf) {
 }
 
 int main() {
-
     printf("HELLO IN REMEMBER WORD APPLICATION!!!\n");
     Config_main *conf = Config_read_config();
+    main_menu(conf);
 
     return 0;
 }
