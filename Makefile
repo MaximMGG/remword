@@ -4,8 +4,9 @@ OBJ = $(patsubst %.c, %.o, $(SRC))
 
 $(MAIN): $(OBJ)
 	gcc -o $@ $^ -lcstd
+
 debug:
-	gcc -o $(MAIN) $(OBJ) -lcstd -g
+	gcc -o $(MAIN) $(SRC) -lcstd -g
 
 %.o: %.c
 	gcc -o $@ -c $<

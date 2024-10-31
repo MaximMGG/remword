@@ -20,7 +20,6 @@ i8 std_config_path[256] = {0};
 
 
 
-
 Config_main *Config_read_config() {
     Config_main *conf = new(Config_main);
     conf->user_name = getlogin();
