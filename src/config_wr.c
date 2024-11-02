@@ -10,8 +10,9 @@
 byte STD_CONFIG_PATH[512] = {0};
 byte STD_PATH_TO_DIR[512] = {0};
 
-#define PATH_TO_WORK_DIR "path_to_work_dir"
-#define USER_FOLDERS "user_folders"
+#define JSON_USER_NAME "user_name"
+#define JSON_PATH_TO_WORK_DIR "path_to_work_dir"
+#define JSON_USER_FOLDERS "user_folders"
 
 //MAIN MENU begin
 
@@ -19,6 +20,32 @@ byte STD_PATH_TO_DIR[512] = {0};
 
 
 void remMeinMenu(Config_main *conf) {
+    printf( "1. Select folder.\n"
+            "2. Create folder.\n"
+            "3. Set path to working dirrectory.\n"
+            "4. Exit\n");
+
+    u32 enter = 0;
+    fscanf(stdin, "%d", &enter);
+
+    switch(enter) {
+        case 1: {
+            remSelectFolderMenu(conf);
+        } break;
+        case 2: {
+            remCreateFolder(conf);
+        } break;
+        case 3: {
+            remSetPathToWorkDir(conf);
+        } break;
+        case 4: {
+            remExit(conf);
+        } break;
+        default: {
+            printf("Don net the opetion %d\nTRY AGANGE\n", enter);
+            remMainMenu(conf);
+        }
+    }
 
 }
 
@@ -82,11 +109,23 @@ static void remCreateConfig(Config_main *conf) {
 
 static void remLoadConfig(Config_main *conf) {
     conf->config = jsonCreateFromFile(STD_CONFIG_PATH);
+    if (conf->config == null) {
+        conf->config = jsonCreateTable(null);
+        jsonInsertInTable(conf->config, jsonCreateString(JSON_USER_NAME, conf->user_name));
+        printf("Please, enter the path to user working dir-> ");
+        byte buf[512] = {0};
+        read(stdin, buf, 512);
+        jsonInsertInTable(conf->config, jsonCreateString(JSON_PATH_TO_WORK_DIR, buf));
+        conf->path_to_work_dir = strNew(buf);
+    } else {
+        conf->path_to_work_dir = strNew(jsonGetObjByKey(conf->config, JSON_PATH_TO_WORK_DIR)->value);
+    }
 }
 
 int main() {
     Config_main *conf = new(Config_main);
     remSetUserName(conf);
+    printf("Hello diar %s in REMEMBER WORDS application!!!\n", conf->user_name);
     if (remConfigExist(conf)) {
         remLoadConfig(conf);
     } else {
