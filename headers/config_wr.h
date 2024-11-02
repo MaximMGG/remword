@@ -27,7 +27,7 @@ typedef struct {
 
 //MAIN MENU begin
 
-void remMeinMenu(Config_main *conf);
+void remMainMenu(Config_main *conf);
 void remSetPathToWorkDir(Config_main *conf);
 void remCreateFolder(Config_main *conf);
 void remExit(Config_main *conf);
