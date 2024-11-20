@@ -16,10 +16,7 @@ byte STD_PATH_TO_DIR[512] = {0};
 
 //MAIN MENU begin
 
-
-
-
-void remMeinMenu(Config_main *conf) {
+void remMainMenu(Config_main *conf) {
     printf( "1. Select folder.\n"
             "2. Create folder.\n"
             "3. Set path to working dirrectory.\n"
@@ -50,30 +47,58 @@ void remMeinMenu(Config_main *conf) {
 }
 
 
-void remSetPathToWorkDir(Config_main *conf);
-void remCreateFolder(Config_main *conf);
-void remExit(Config_main *conf);
+void remSetPathToWorkDir(Config_main *conf) {
+
+}
+void remCreateFolder(Config_main *conf) {
+
+}
+void remExit(Config_main *conf) {
+
+}
 
 //MAIN MENU end
 
 //SELECT FOLDER begin
-void remSelectFolderMenu(Config_main *conf);
+void remSelectFolderMenu(Config_main *conf) {
+    if (conf->files->files_count == 0) {
+        printf("0.\nNo dirs in work folder, create new one\n");
+        remMainMenu(conf);
+    }
+    printf("Enter dir number or 0 for back in main menu\n");
+    for(i32 i = 0; i < conf->files->files_count; i++) {
+        printf("%d. %s\n", i + 1, conf->files[i].name);
+    }
+    i32 enter = 0;
+    fscanf(stdin, "%d", &enter);
+    if (enter == 0) {
+        remMainMenu(conf);
+    } else {
+        remFolderContentMenu(conf, conf->files[enter - 1].name);
+    }
+}
 
 //SELECT FOLDER end
 
 //FOLDER CONTENT begin
-void remFolderContentMenu(Config_main *conf, str folder_name);
+void remFolderContentMenu(Config_main *conf, str folder_name) {
+
+}
 
 //FOLDER CONTENT end
 
 //FILE CONTENT bigin
-void remFileContentMenu(Config_main *conf, str file_name);
+void remFileContentMenu(Config_main *conf, str file_name) {
+
+}
 //FILE CONTENT end
 
 
 //MEMORISING begin
 
-void remStartMemorise(Config_main *conf, str file_name);
+void remStartMemorise(Config_main *conf, str file_name) {
+
+}
 
 //MEMORISING end
 
@@ -114,15 +139,18 @@ static void remLoadConfig(Config_main *conf) {
         jsonInsertInTable(conf->config, jsonCreateString(JSON_USER_NAME, conf->user_name));
         printf("Please, enter the path to user working dir-> ");
         byte buf[512] = {0};
-        read(stdin, buf, 512);
+        read(STDIN_FILENO, buf, 512);
         jsonInsertInTable(conf->config, jsonCreateString(JSON_PATH_TO_WORK_DIR, buf));
         conf->path_to_work_dir = strNew(buf);
+        conf->files = fileGetDirCont(conf->path_to_work_dir, true);
     } else {
         conf->path_to_work_dir = strNew(jsonGetObjByKey(conf->config, JSON_PATH_TO_WORK_DIR)->value);
+        conf->files = fileGetDirCont(conf->path_to_work_dir, true);
     }
 }
 
 int main() {
+    setbuf(stdout, NULL);
     Config_main *conf = new(Config_main);
     remSetUserName(conf);
     printf("Hello diar %s in REMEMBER WORDS application!!!\n", conf->user_name);

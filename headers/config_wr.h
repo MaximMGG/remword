@@ -2,6 +2,7 @@
 #define CONFIG_WR_H
 #include <cstdext/core.h>
 #include <cstdext/arraylist.h>
+#include <cstdext/files.h>
 #include <cstdext/jsonparser.h>
 #include "rem_error.h"
 
@@ -22,6 +23,7 @@ typedef struct {
     str current_file;
     file_change *changed_files;
     JSON_OBJ *config;
+    file *files;
 }Config_main;
 
 
