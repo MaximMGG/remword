@@ -1,6 +1,7 @@
 # Prerequisites
 *.d
-
+/zig-out
+/.zig-cache
 # Object files
 *.o
 *.ko
