@@ -120,6 +120,14 @@ pub const fs = struct {
             }
         } 
         _ = try cfg_file.write("}\n");
+     }
+    pub fn createLib(self: *fs, lib_name: []const u8) !void {
+        var buf: [256]u8 = .{0} ** 256;
+        const path_to_dir = try std.fmt.bufPrint(&buf, cfg_dir_path, .{self.cfg.lib_path.?});
+        const path_to_lib = try std.mem.concat(self.allocator, u8, &[_][]const u8{path_to_dir, "/", lib_name});
+        const new_lib_file = try std.fs.openFileAbsolute(path_to_lib, .{});
+        defer new_lib_file.close();
+        self.cfg.libs.append(try self.allocator.dupe(u8, lib_name));
     }
 
 
