@@ -7,31 +7,38 @@ const unistd = @cImport({
 const stdout = std.io.getStdOut().writer();
 const stdin = std.io.getStdIn().reader();
 
-var user_name_global: [64]u8 = .{0} ** 64;
 
-
-fn set_user_name() !void {
-
+fn set_user_name(f: *fs.fs) !void {
     const user_name = unistd.getlogin();
-    var u: []u8 = undefined;
-    u.ptr = @ptrCast(user_name);
-    u.len = std.mem.len(user_name);
-
-    @memcpy(user_name_global[0..u.len], u[0..u.len]);
-
+    var name_buf: [64]u8 = .{0} ** 64;
+    if (user_name == 0x0) {
+        var cwd_buf: [128]u8 = .{0} ** 128;
+        const cwd = try std.posix.getcwd(&cwd_buf);
+        var index = std.mem.indexOfScalar(u8, cwd[1..cwd.len], '/') orelse return;
+        index += 2;
+        for(0..128) |i| {
+            if (cwd[index] == '/') {
+                f.cfg.user_name = try f.allocator.dupe(u8, name_buf[0..i]);
+                break;
+            }
+            name_buf[i] = cwd[index];
+            index += 1;
+        }
+    }
 }
 
-fn main_menu() !void {
-    try stdout.print("Hello diar {s}, welcome to memorizeble!\n", .{user_name_global});
+fn main_menu(f: *fs.fs) !void {
+    try stdout.print("Hello diar {s}, welcome to memorizeble!\n", .{f.cfg.user_name.?});
 }
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    try set_user_name();
-    var f = fs.fs{.allocator = allocator, .cfg = .{.user_name = user_name_global}};
-    f.readCfg();
+    var f = fs.fs{.allocator = allocator, .cfg = .{}};
+    try set_user_name(&f);
+    try f.readCfg();
     try main_menu();
+    defer f.deinit();
 }
 
 pub fn cleanup(f: *fs.fs) void {
@@ -39,16 +46,15 @@ pub fn cleanup(f: *fs.fs) void {
 }
 
 test "set_user_name_test" {
-    try set_user_name();
-    
-    try std.testing.expectEqualStrings(&user_name_global, "maxim");
+    var f = fs.fs{.allocator = std.testing.allocator, .cfg = .{}};
+    try set_user_name(&f);
+    defer f.deinit();
 }
 
 test "readCfgNullTest" {
-    try set_user_name();
-    var f = fs.fs{.allocator = std.testing.allocator, .cfg = .{.user_name = user_name_global}};
-    f.readCfg();
-
+    var f = fs.fs{.allocator = std.testing.allocator, .cfg = .{}};
+    try set_user_name(&f);
+    try f.readCfg();
     defer f.deinit();
 
 }
