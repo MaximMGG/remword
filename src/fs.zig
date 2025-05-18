@@ -56,7 +56,7 @@ pub const fs = struct {
 
         var lib_index = std.mem.indexOf(u8, &cfg_buf, "LIB_PATH: ") orelse return error.UncorrectCfg;
         lib_index = std.mem.indexOfScalar(u8, &cfg_buf, '\"') orelse return error.UncorrectCfg;
-        if (std.mem.eql(u8, cfg_buf[lib_index..(lib_index + 1)], "\"\"")) {
+        if (std.mem.eql(u8, cfg_buf[lib_index..(lib_index + 2)], "\"\"")) {
             self.cfg.lib_path = null;
             self.cfg.libs = null;
             return;

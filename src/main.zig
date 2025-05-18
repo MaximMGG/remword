@@ -37,6 +37,14 @@ fn set_user_name(f: *fs.fs) !void {
 
 fn main_menu(f: *fs.fs) !void {
     try stdout.print("Hello diar {s}, welcome to memorizeble!\n", .{f.cfg.user_name.?});
+    if (f.cfg.lib_path == null) {
+        try stdout.print("Please, set path to your lib: ", .{});
+        var path_buf: [128]u8 = .{0} ** 128;
+        const read_bytes = try stdin.read(&path_buf);
+        if (read_bytes > 0) {
+            f.cfg.lib_path = try f.allocator.dupe(u8, path_buf[0..read_bytes - 1]);
+        }
+    }
 }
 
 pub fn main() !void {
