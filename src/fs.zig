@@ -27,8 +27,7 @@ pub const fs = struct {
     pub fn readCfg(self: *fs) !void {
         var path_buf: [128]u8 = .{0} ** 128;
 
-        const path_buf_fin = try std.fmt.bufPrint(&path_buf, 
-                        cfg_path, .{self.cfg.user_name.?});
+        const path_buf_fin = try std.fmt.bufPrint(&path_buf, cfg_path, .{self.cfg.user_name.?});
         if (c.access(path_buf_fin.ptr, c.F_OK) == 0) {
             const cfg_file = std.fs.openFileAbsolute(path_buf_fin, .{.mode = .read_only}) catch |err| {
                 std.debug.print("Error while open cfg file - {any}, try to create new config\n", .{err});
@@ -104,8 +103,28 @@ pub const fs = struct {
         defer cfg_file.close();
     }
 
+    pub fn writeConfig(self: *fs) !void {
+        var buf: [256]u8 = .{0} ** 256;
+        const cfg_path_fin = try std.fmt.bufPrint(&buf, cfg_path, .{self.cfg.user_name.?});
+        const cfg_file = try std.fs.openFileAbsolute(cfg_path_fin, .{.mode = .write_only});
+        defer cfg_file.close();
+        @memset(&buf, 0);
+        const lib_path = try std.fmt.bufPrint(&buf, "LIB_PATH: \"{s}\"\n", .{self.cfg.lib_path orelse ""});
+        _ = try cfg_file.write(lib_path);
+        _ = try cfg_file.write("LIBS: {\n");
+        if (self.cfg.libs) |l_libs| {
+            for(l_libs.items) |item| {
+                @memset(&buf, 0);
+                const lib_name = try std.fmt.bufPrint(&buf, "\"{s}\"\n", .{item});
+                _ = try cfg_file.write(lib_name);
+            }
+        } 
+        _ = try cfg_file.write("}\n");
+    }
 
-    pub fn deinit(self: *fs) void {
+
+    pub fn deinit(self: *fs) !void {
+        try self.writeConfig();
         if (self.cfg.lib_path) |lp| {
             self.allocator.free(lp);
         }

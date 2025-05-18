@@ -24,6 +24,14 @@ fn set_user_name(f: *fs.fs) !void {
             name_buf[i] = cwd[index];
             index += 1;
         }
+    } else {
+        for(0..64) |i| {
+            if (user_name[i] == 0) {
+                f.cfg.user_name = try f.allocator.dupe(u8, name_buf[0..i]);
+                break;
+            }
+            name_buf[i] = user_name[i];
+        }
     }
 }
 
@@ -37,8 +45,10 @@ pub fn main() !void {
     var f = fs.fs{.allocator = allocator, .cfg = .{}};
     try set_user_name(&f);
     try f.readCfg();
-    try main_menu();
-    defer f.deinit();
+    try main_menu(&f);
+    defer f.deinit() catch |err| {
+        std.debug.print("fs deinit error {any}\n", .{err});
+    };
 }
 
 pub fn cleanup(f: *fs.fs) void {
