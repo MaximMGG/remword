@@ -16,7 +16,7 @@ pub const config = struct {
     user_name: ?[]const u8 = null,
     lib_path: ?[]const u8 = null,
 
-    libs: ?std.ArrayList([]u8) = null,
+    libs: ?std.ArrayList([]const u8) = null,
 };
 
 
@@ -70,17 +70,17 @@ pub const fs = struct {
                 lib_path_buf[i] = char;
             }
         }
-        self.cfg.libs = std.ArrayList([]u8).init(self.allocator);
+        self.cfg.libs = std.ArrayList([]const u8).init(self.allocator);
         lib_index = std.mem.indexOf(u8, &cfg_buf, "LIBS: ") orelse return error.UncorrectCfg;
         lib_index = std.mem.indexOfScalar(u8, &cfg_buf, '{') orelse return error.UncorrectCfg;
         var i: usize = lib_index;
         while(i < cfg_len) : (i += 1) {
             if (cfg_buf[i] == '"') {
-                var lib_name_buf = try self.allocator.alloc(u8, 128);
+                var lib_name_buf: [128]u8 = .{0} ** 128;
                 i += 1;
                 for(i+1..cfg_len, 0..) |j, k| {
                     if (cfg_buf[j] == '"') {
-                        try self.cfg.libs.?.append(lib_name_buf);
+                        try self.cfg.libs.?.append(try self.allocator.dupe(u8, lib_name_buf[0..k]));
                         i += 1;
                         break;
                     }
@@ -123,11 +123,19 @@ pub const fs = struct {
      }
     pub fn createLib(self: *fs, lib_name: []const u8) !void {
         var buf: [256]u8 = .{0} ** 256;
-        const path_to_dir = try std.fmt.bufPrint(&buf, cfg_dir_path, .{self.cfg.lib_path.?});
-        const path_to_lib = try std.mem.concat(self.allocator, u8, &[_][]const u8{path_to_dir, "/", lib_name});
-        const new_lib_file = try std.fs.openFileAbsolute(path_to_lib, .{});
+        const path_to_dir = try std.fmt.bufPrint(&buf, cfg_dir_path, .{self.cfg.user_name.?});
+        std.debug.print("paht to dir - {s}\n", .{path_to_dir});
+        const path_to_lib = try std.mem.concat(self.allocator, u8, &[_][]const u8{self.cfg.lib_path.?, "/", lib_name});
+        std.debug.print("new lib path - {s}\n", .{path_to_lib});
+        defer self.allocator.free(path_to_lib);
+        const new_lib_file = try std.fs.createFileAbsolute(path_to_lib, .{});
         defer new_lib_file.close();
-        self.cfg.libs.append(try self.allocator.dupe(u8, lib_name));
+        if (self.cfg.libs) |*l_libs| {
+            try l_libs.append(try self.allocator.dupe(u8, lib_name));
+        } else {
+            self.cfg.libs = std.ArrayList([]const u8).init(self.allocator);
+            try self.cfg.libs.?.append(try self.allocator.dupe(u8, lib_name));
+        }
     }
 
 

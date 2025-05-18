@@ -45,6 +45,10 @@ fn main_menu(f: *fs.fs) !void {
             f.cfg.lib_path = try f.allocator.dupe(u8, path_buf[0..read_bytes - 1]);
         }
     }
+    try stdout.print("Enter new lib name: ", .{});
+    var buf: [128]u8 = .{0} ** 128;
+    const read_bytes = try stdin.read(&buf);
+    try f.createLib(buf[0..read_bytes - 1]);
 }
 
 pub fn main() !void {
