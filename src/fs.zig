@@ -3,7 +3,6 @@ const c = @cImport({
     @cInclude("unistd.h");
 });
 
-
 const cfg_path = "/home/{s}/.local/share/remword/remword.cfg";
 const cfg_dir_path = "/home/{s}/.local/share/remword";
 const cfg_template = 
@@ -138,7 +137,11 @@ pub const fs = struct {
             try self.cfg.libs.?.append(try self.allocator.dupe(u8, lib_name));
         }
     }
-
+    pub fn deleteLib(self: *fs, lib_name: []const u8) !void {
+        const path_to_lib = try std.mem.concat(self.allocator, u8, &[_][]const u8{self.cfg.lib_path.?, "/", lib_name});
+        try std.fs.deleteFileAbsolute(path_to_lib);
+        self.allocator.free(path_to_lib);
+    }
 
     pub fn deinit(self: *fs) !void {
         try self.writeConfig();

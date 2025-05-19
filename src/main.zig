@@ -111,10 +111,10 @@ fn main_menu(f: *fs.fs) !void {
                 }
             },
             .DELETE_LIB => {
-                try stdout.print("Enter lib number: \n", .{});
                 for(f.cfg.libs.?.items, 0..) |it, lib_index| {
                     try stdout.print("{d} - {s}\n", .{lib_index + 1, it});
                 }
+                try stdout.print("Enter lib number: \n", .{});
                 var buf: [16]u8 = .{0} ** 16;
                 var read_bytes = try stdin.read(&buf);
                 const num = try std.fmt.parseInt(u32, buf[0..read_bytes - 1], 10);
@@ -129,6 +129,7 @@ fn main_menu(f: *fs.fs) !void {
                 if (buf[0] == 'y') {
                     const rem_item = f.cfg.libs.?.orderedRemove(num - 1);
                     try stdout.print("Removing lib - {s}\n", .{rem_item});
+                    try f.deleteLib(rem_item);
                     f.allocator.free(rem_item);
                 } else if (buf[0] == 'n') {
                     continue;
@@ -145,7 +146,26 @@ fn main_menu(f: *fs.fs) !void {
                 try stdout.print("Created lib: {s}\n", .{buf[0..read_bytes - 1]});
             },
             .CHANGE_LIB_PATH => {
-
+                try stdout.print("Your current path to word dir - {s}\n", .{f.cfg.lib_path.?});
+                try stdout.print("Do you want to change it? y (yes) / n (no): ", .{});
+                var buf: [128]u8 = .{0} ** 128;
+                _ = try stdin.read(&buf);
+                if (buf[0] == 'y') {
+                    @memset(&buf, 0);
+                    try stdout.print("Enter new word dir path: ", .{});
+                    const read_bytes = try stdin.read(&buf);
+                    if (read_bytes > 1) {
+                        f.allocator.free(f.cfg.lib_path.?);
+                        f.cfg.lib_path = f.allocator.dupe(u8, buf[0..read_bytes - 1]);
+                        try stdout.print("You new work dir path: {s}\n", .{f.cfg.lib_path.?});
+                    } else {
+                        try stdout.print("You do not enter path\n", .{});
+                    }
+                } else if (buf[0] == 'n') {
+                    continue;
+                } else {
+                    try stdout.print("Wrong option\n", .{});
+                }
             },
             .EXIT => {
                 break;
@@ -169,9 +189,6 @@ pub fn main() !void {
 pub fn cleanup(f: *fs.fs) void {
     f.deinit();
 }
-
-
-
 
 test "set_user_name_test" {
     var f = fs.fs{.allocator = std.testing.allocator, .cfg = .{}};
