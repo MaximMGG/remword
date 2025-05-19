@@ -107,6 +107,7 @@ pub const fs = struct {
         var buf: [256]u8 = .{0} ** 256;
         const cfg_path_fin = try std.fmt.bufPrint(&buf, cfg_path, .{self.cfg.user_name.?});
         const cfg_file = try std.fs.openFileAbsolute(cfg_path_fin, .{.mode = .write_only});
+        try cfg_file.setEndPos(0);
         defer cfg_file.close();
         @memset(&buf, 0);
         const lib_path = try std.fmt.bufPrint(&buf, "LIB_PATH: \"{s}\"\n", .{self.cfg.lib_path orelse ""});

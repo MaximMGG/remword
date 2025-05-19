@@ -97,10 +97,10 @@ fn main_menu(f: *fs.fs) !void {
     while(true) {
         switch(try main_menu_opt()) {
             .SELECT_LIB => {
+                try stdout.print("Enter lib number: \n", .{});
                 for(f.cfg.libs.?.items, 0..) |lib, lib_number| {
                     try stdout.print("{d} - {s}\n", .{lib_number + 1, lib});
                 }
-                try stdout.print("Enter lib number: ", .{});
                 var num_buf: [16]u8 = .{0} ** 16;
                 const read_bytes = try stdin.read(&num_buf);
                 const num = try std.fmt.parseInt(u32, num_buf[0..read_bytes - 1], 10);
@@ -111,7 +111,31 @@ fn main_menu(f: *fs.fs) !void {
                 }
             },
             .DELETE_LIB => {
-
+                try stdout.print("Enter lib number: \n", .{});
+                for(f.cfg.libs.?.items, 0..) |it, lib_index| {
+                    try stdout.print("{d} - {s}\n", .{lib_index + 1, it});
+                }
+                var buf: [16]u8 = .{0} ** 16;
+                var read_bytes = try stdin.read(&buf);
+                const num = try std.fmt.parseInt(u32, buf[0..read_bytes - 1], 10);
+                if (num <= 0 and num >= f.cfg.libs.?.items.len) {
+                    try stdout.print("Incorrect lib number {d}\n", .{num});
+                    continue;
+                }
+                try stdout.print("Are you shure the you whant to delete lib {s} with all content?\n", .{f.cfg.libs.?.items[num - 1]});
+                try stdout.print("Enter y (yes) / n (no) : ", .{});
+                @memset(&buf, 0);
+                read_bytes = try stdin.read(&buf);
+                if (buf[0] == 'y') {
+                    const rem_item = f.cfg.libs.?.orderedRemove(num - 1);
+                    try stdout.print("Removing lib - {s}\n", .{rem_item});
+                    f.allocator.free(rem_item);
+                } else if (buf[0] == 'n') {
+                    continue;
+                } else {
+                    try stdout.print("Wrong option {s}\n", .{buf});
+                    continue;
+                }
             },
             .CREATE_LIB => {
                 try stdout.print("Enter new lib name: ", .{});
