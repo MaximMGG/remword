@@ -78,7 +78,7 @@ pub const fs = struct {
             if (cfg_buf[i] == '"') {
                 var lib_name_buf: [128]u8 = .{0} ** 128;
                 i += 1;
-                for(i+1..cfg_len, 0..) |j, k| {
+                for(i..cfg_len, 0..) |j, k| {
                     if (cfg_buf[j] == '"') {
                         try self.cfg.libs.?.append(try self.allocator.dupe(u8, lib_name_buf[0..k]));
                         i += 1;

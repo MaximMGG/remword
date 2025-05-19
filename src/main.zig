@@ -7,6 +7,19 @@ const unistd = @cImport({
 const stdout = std.io.getStdOut().writer();
 const stdin = std.io.getStdIn().reader();
 
+const MAIN_MENU_OPT = enum {
+    CREATE_LIB,
+    DELETE_LIB,
+    CHANGE_LIB_PATH,
+    SELECT_LIB,
+    EXIT
+};
+
+const LIB_MENU_OPT = enum {
+    ADD_WORD,
+    DELETE_WORD,
+    SHOW_LIB_CONTENT
+};
 
 fn set_user_name(f: *fs.fs) !void {
     const user_name = unistd.getlogin();
@@ -35,6 +48,41 @@ fn set_user_name(f: *fs.fs) !void {
     }
 }
 
+
+fn main_menu_opt() !MAIN_MENU_OPT {
+    try stdout.print("Select options:\n", .{});
+    try stdout.print("1 - SELECT LIB\n", .{});
+    try stdout.print("2 - DELETE LIB\n", .{});
+    try stdout.print("3 - CREATE LIB\n", .{});
+    try stdout.print("3 - CHANGE LIB PATH\n", .{});
+    try stdout.print("5 - EXIT\n", .{});
+    var input_buf: [16]u8 = .{0} ** 16;
+    const read_bytes = try stdin.read(&input_buf);
+    const input = try std.fmt.parseInt(u32, input_buf[0..read_bytes - 1], 10);
+    switch(input) {
+        1 => {
+            return .SELECT_LIB;
+        },
+        2 => {
+            return .DELETE_LIB;
+        },
+        3 => {
+            return .CREATE_LIB;
+        },
+        4 => {
+            return .CHANGE_LIB_PATH;
+        },
+        5 => {
+            return .EXIT;
+        },
+        else => {
+            try stdout.print("Incorect options - {d}\nTry agane", .{input});
+            return main_menu_opt();
+        }
+    }
+}
+
+
 fn main_menu(f: *fs.fs) !void {
     try stdout.print("Hello diar {s}, welcome to memorizeble!\n", .{f.cfg.user_name.?});
     if (f.cfg.lib_path == null) {
@@ -45,10 +93,41 @@ fn main_menu(f: *fs.fs) !void {
             f.cfg.lib_path = try f.allocator.dupe(u8, path_buf[0..read_bytes - 1]);
         }
     }
-    try stdout.print("Enter new lib name: ", .{});
-    var buf: [128]u8 = .{0} ** 128;
-    const read_bytes = try stdin.read(&buf);
-    try f.createLib(buf[0..read_bytes - 1]);
+
+    while(true) {
+        switch(try main_menu_opt()) {
+            .SELECT_LIB => {
+                for(f.cfg.libs.?.items, 0..) |lib, lib_number| {
+                    try stdout.print("{d} - {s}\n", .{lib_number + 1, lib});
+                }
+                try stdout.print("Enter lib number: ", .{});
+                var num_buf: [16]u8 = .{0} ** 16;
+                const read_bytes = try stdin.read(&num_buf);
+                const num = try std.fmt.parseInt(u32, num_buf[0..read_bytes - 1], 10);
+                if (num >= f.cfg.libs.?.items.len) {
+                    try stdout.print("Lib with number {d} not existes\n", .{num});
+                } else {
+                    try stdout.print("You select lib - {s}\n", .{f.cfg.libs.?.items[num - 1]});
+                }
+            },
+            .DELETE_LIB => {
+
+            },
+            .CREATE_LIB => {
+                try stdout.print("Enter new lib name: ", .{});
+                var buf: [128]u8 = .{0} ** 128;
+                const read_bytes = try stdin.read(&buf);
+                try f.createLib(buf[0..read_bytes - 1]);
+                try stdout.print("Created lib: {s}\n", .{buf[0..read_bytes - 1]});
+            },
+            .CHANGE_LIB_PATH => {
+
+            },
+            .EXIT => {
+                break;
+            }
+        }
+    }
 }
 
 pub fn main() !void {
