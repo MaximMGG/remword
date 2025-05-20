@@ -125,7 +125,7 @@ fn main_menu(f: *fs.fs) !void {
                     read_bytes = try stdin.read(&buf);
                     if (read_bytes > 0) {
                         if (buf[0] == 'y') {
-                            f.writeLib();
+                            try f.writeLib();
                             try f.selectLib(num - 1);
                         }
                     } else if (buf[0] == 'n') {
@@ -195,16 +195,39 @@ fn main_menu(f: *fs.fs) !void {
                 }
             },
             .EXIT => {
-                break;
+                if (f.cur_lib == null) {
+                    try stdout.print("Goodbye!\n", .{});
+                    break;
+                } else if (f.cur_lib.?.changed == true) {
+                    try stdout.print("Do you want save changes in lib {s}\n", .{f.cur_lib.?.lib_name});
+                    try stdout.print("Enter y (yes) / n (no) : ", .{});
+                    var buf: [16]u8 = .{0} ** 16;
+                    const read_bytes = try stdin.read(&buf);
+                    if (read_bytes > 0) {
+                        if (buf[0] == 'y') {
+                            try f.writeLib();
+                            f.cur_lib.?.freeLib();
+                        }
+                    } else if (buf[0] == 'n') {
+                        break;
+                    } else {
+                        try stdout.print("Wrong option {s}\n", .{buf});
+                        continue;
+                    }
+                } else {
+                    f.cur_lib.?.freeLib();
+                    break;
+                }
             }
         }
     }
 }
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    var f = fs.fs{.allocator = allocator, .cfg = .{}};
+    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    // const allocator = gpa.allocator();
+    // var f = fs.fs{.allocator = allocator, .cfg = .{}};
+    var f= fs.fs{.allocator = std.heap.c_allocator, .cfg = .{}};
     try set_user_name(&f);
     try f.readCfg();
     try main_menu(&f);

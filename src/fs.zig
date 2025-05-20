@@ -141,23 +141,35 @@ pub const fs = struct {
     }
 
     fn parseLib(self: *fs, lib_buf: []u8) !void {
-        var w_s: usize = 0;
-        var w_e: usize = 0;
-        var t_s: usize = 0;
-        var t_e: usize = 0;
-        while(w_s < lib_buf.len) {
-            w_s = std.mem.indexOfScalar(u8, lib_buf[w_s..lib_buf.len], '\"') orelse break;
-            w_e += w_s + 1;
-            w_e += std.mem.indexOfScalar(u8, lib_buf[w_s + 1..lib_buf.len], '\"') orelse break;
-            t_s += w_e + 1;
-            t_s += std.mem.indexOfScalar(u8, lib_buf[w_e + 1..lib_buf.len], '\"') orelse break;
-            t_e += t_s + 1;
-            t_e += std.mem.indexOfScalar(u8, lib_buf[t_s + 1..lib_buf.len], '\"') orelse break;
-            std.debug.print("Key - {s}\n", .{lib_buf[w_s + 1..w_e]});
-            std.debug.print("Val - {s}\n", .{lib_buf[t_s + 1..t_e]});
-            try self.cur_lib.?.lib_content.put( try self.allocator.dupe(u8, lib_buf[w_s + 1..w_e]),
-                                            try self.allocator.dupe(u8, lib_buf[t_s + 1..t_e]));
-            w_s += t_e + 1;
+        var i: usize = 0;
+        var key_buf: [128]u8 = .{0} ** 128;
+        var k_i: usize = 0;
+        var val_buf: [128]u8 = .{0} ** 128;
+        var v_i: usize = 0;
+        while(i < lib_buf.len) : (i += 1){
+            if (lib_buf[i] == '\"') {
+                i += 1;
+                while(lib_buf[i] != '\"') : (i += 1) {
+                    key_buf[k_i] = lib_buf[i];
+                    k_i += 1;
+                }
+                i += 1;
+                while(lib_buf[i] != '\"') : (i += 1){}
+                i += 1;
+                while(lib_buf[i] != '\"') : (i += 1) {
+                    val_buf[v_i] = lib_buf[i];
+                    v_i += 1;
+                }
+                std.debug.print("Key - {s}\n", .{key_buf});
+                std.debug.print("Val - {s}\n", .{val_buf});
+
+                try self.cur_lib.?.lib_content.put( try self.allocator.dupe(u8, key_buf[0..k_i]),
+                                                try self.allocator.dupe(u8, val_buf[0..v_i]));
+
+                //while(key_buf[i] != '\"' and i < lib_buf.len) : (i += 1) {}
+                @memset(&key_buf, 0);
+                @memset(&val_buf, 0);
+            }
         }
     }
 
@@ -189,8 +201,20 @@ pub const fs = struct {
         self.allocator.free(path_to_lib);
     }
 
-    pub fn writeLib() !void {
-
+    pub fn writeLib(self: *fs) !void {
+        var index: usize = 1;
+        var it = self.cur_lib.?.lib_content.iterator();
+        const lib_path = try std.mem.concat(self.allocator, u8, 
+                    &[_][]const u8{self.cfg.lib_path.?, "/", self.cur_lib.?.lib_name});
+        defer self.allocator.free(lib_path);
+        const lib_file = try std.fs.openFileAbsolute(lib_path, .{.mode = .write_only});
+        defer lib_file.close();
+        var buf: [256]u8 = .{0} ** 256;
+        while(it.next()) |entry| {
+            const pair = try std.fmt.bufPrint(&buf, "{d}. \"{s}\" - \"{s}\"\n", .{index, entry.key_ptr.*, entry.value_ptr.*});
+            _ = try lib_file.write(pair);
+            index += 1;
+        }
     }
 
     pub fn deinit(self: *fs) !void {
