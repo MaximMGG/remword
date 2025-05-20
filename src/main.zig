@@ -48,6 +48,9 @@ fn set_user_name(f: *fs.fs) !void {
     }
 }
 
+fn lib_menu_opt() !LIB_MENU_OPT {
+
+}
 
 fn main_menu_opt() !MAIN_MENU_OPT {
     try stdout.print("Select options:\n", .{});
@@ -82,6 +85,9 @@ fn main_menu_opt() !MAIN_MENU_OPT {
     }
 }
 
+fn lib_menu() !void {
+
+}
 
 fn main_menu(f: *fs.fs) !void {
     try stdout.print("Hello diar {s}, welcome to memorizeble!\n", .{f.cfg.user_name.?});
@@ -102,12 +108,33 @@ fn main_menu(f: *fs.fs) !void {
                     try stdout.print("{d} - {s}\n", .{lib_number + 1, lib});
                 }
                 var num_buf: [16]u8 = .{0} ** 16;
-                const read_bytes = try stdin.read(&num_buf);
+                var read_bytes = try stdin.read(&num_buf);
                 const num = try std.fmt.parseInt(u32, num_buf[0..read_bytes - 1], 10);
-                if (num >= f.cfg.libs.?.items.len) {
+                if ((num - 1) >= f.cfg.libs.?.items.len) {
                     try stdout.print("Lib with number {d} not existes\n", .{num});
+                    continue;
                 } else {
                     try stdout.print("You select lib - {s}\n", .{f.cfg.libs.?.items[num - 1]});
+                }
+                if (f.cur_lib == null) {
+                    try f.selectLib(num - 1);
+                } else if (f.cur_lib.?.changed == true) {
+                    try stdout.print("Do you want save changes in lib {s}\n", .{f.cur_lib.?.lib_name});
+                    try stdout.print("Enter y (yes) / n (no) : ", .{});
+                    var buf: [16]u8 = .{0} ** 16;
+                    read_bytes = try stdin.read(&buf);
+                    if (read_bytes > 0) {
+                        if (buf[0] == 'y') {
+                            f.writeLib();
+                            try f.selectLib(num - 1);
+                        }
+                    } else if (buf[0] == 'n') {
+                        try f.selectLib(num - 1);
+                    } else {
+                        try stdout.print("Wrong option {s}\n", .{buf});
+                        continue;
+                    }
+
                 }
             },
             .DELETE_LIB => {
@@ -156,7 +183,7 @@ fn main_menu(f: *fs.fs) !void {
                     const read_bytes = try stdin.read(&buf);
                     if (read_bytes > 1) {
                         f.allocator.free(f.cfg.lib_path.?);
-                        f.cfg.lib_path = f.allocator.dupe(u8, buf[0..read_bytes - 1]);
+                        f.cfg.lib_path = try f.allocator.dupe(u8, buf[0..read_bytes - 1]);
                         try stdout.print("You new work dir path: {s}\n", .{f.cfg.lib_path.?});
                     } else {
                         try stdout.print("You do not enter path\n", .{});

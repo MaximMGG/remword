@@ -1,4 +1,5 @@
 const std = @import("std");
+const lib = @import("lib.zig");
 const c = @cImport({
     @cInclude("unistd.h");
 });
@@ -22,6 +23,7 @@ pub const config = struct {
 pub const fs = struct {
     cfg: config = .{},
     allocator: std.mem.Allocator,
+    cur_lib: ?lib.Lib = null,
 
     pub fn readCfg(self: *fs) !void {
         var path_buf: [128]u8 = .{0} ** 128;
@@ -137,10 +139,58 @@ pub const fs = struct {
             try self.cfg.libs.?.append(try self.allocator.dupe(u8, lib_name));
         }
     }
+
+    fn parseLib(self: *fs, lib_buf: []u8) !void {
+        var w_s: usize = 0;
+        var w_e: usize = 0;
+        var t_s: usize = 0;
+        var t_e: usize = 0;
+        while(w_s < lib_buf.len) {
+            w_s = std.mem.indexOfScalar(u8, lib_buf[w_s..lib_buf.len], '\"') orelse break;
+            w_e += w_s + 1;
+            w_e += std.mem.indexOfScalar(u8, lib_buf[w_s + 1..lib_buf.len], '\"') orelse break;
+            t_s += w_e + 1;
+            t_s += std.mem.indexOfScalar(u8, lib_buf[w_e + 1..lib_buf.len], '\"') orelse break;
+            t_e += t_s + 1;
+            t_e += std.mem.indexOfScalar(u8, lib_buf[t_s + 1..lib_buf.len], '\"') orelse break;
+            std.debug.print("Key - {s}\n", .{lib_buf[w_s + 1..w_e]});
+            std.debug.print("Val - {s}\n", .{lib_buf[t_s + 1..t_e]});
+            try self.cur_lib.?.lib_content.put( try self.allocator.dupe(u8, lib_buf[w_s + 1..w_e]),
+                                            try self.allocator.dupe(u8, lib_buf[t_s + 1..t_e]));
+            w_s += t_e + 1;
+        }
+    }
+
+    pub fn selectLib(self: *fs, lib_index: u32) !void {
+        if (self.cur_lib == null) {
+            self.cur_lib = lib.Lib{
+                .lib_name = self.cfg.libs.?.items[lib_index], 
+                .allocator = self.allocator, 
+                .lib_content = std.StringHashMap([]const u8).init(self.allocator)};
+        } else {
+            self.cur_lib.?.freeLib();
+            self.cur_lib.?.lib_content = std.StringHashMap([]const u8).init(self.allocator);
+            self.cur_lib.?.lib_name = self.cfg.libs.?.items[lib_index];
+            self.cur_lib.?.changed = false;
+        }
+        const lib_path = try std.mem.concat(self.allocator, u8, 
+            &[_][]const u8{self.cfg.lib_path.?, "/", self.cfg.libs.?.items[lib_index]});
+        defer self.allocator.free(lib_path);
+
+        const lib_file = try std.fs.openFileAbsolute(lib_path, .{.mode = .read_only});
+        const lib_buf = try lib_file.reader().readAllAlloc(self.allocator, 40960);
+        defer self.allocator.free(lib_buf);
+        try self.parseLib(lib_buf);
+    }
+
     pub fn deleteLib(self: *fs, lib_name: []const u8) !void {
         const path_to_lib = try std.mem.concat(self.allocator, u8, &[_][]const u8{self.cfg.lib_path.?, "/", lib_name});
         try std.fs.deleteFileAbsolute(path_to_lib);
         self.allocator.free(path_to_lib);
+    }
+
+    pub fn writeLib() !void {
+
     }
 
     pub fn deinit(self: *fs) !void {
