@@ -18,7 +18,9 @@ const MAIN_MENU_OPT = enum {
 const LIB_MENU_OPT = enum {
     ADD_WORD,
     DELETE_WORD,
-    SHOW_LIB_CONTENT
+    SHOW_LIB_CONTENT,
+    CHANGE_TRANSLATION,
+    BACK_TO_MAIN_MENU,
 };
 
 fn set_user_name(f: *fs.fs) !void {
@@ -48,8 +50,31 @@ fn set_user_name(f: *fs.fs) !void {
     }
 }
 
+    // ADD_WORD,
+    // DELETE_WORD,
+    // SHOW_LIB_CONTENT,
+    // CHANGE_TRANSLATION,
 fn lib_menu_opt() !LIB_MENU_OPT {
-
+    try stdout.print("Select lib options\n", .{});
+    try stdout.print("1 - ADD WORD\n", .{});
+    try stdout.print("2 - DELETE WORD\n", .{});
+    try stdout.print("3 - SHOW LIB CONTENT\n", .{});
+    try stdout.print("4 - CHANGE TRANLATION\n", .{});
+    try stdout.print("5 - BACK TO MAIN MENU\n", .{});
+    var num_buf: [16]u8 = .{0} ** 16;
+    const read_bytes = try stdin.read(&num_buf);
+    const num = try std.fmt.parseInt(u32, num_buf[0..read_bytes - 1], 10);
+    switch(num) {
+        1 => return .ADD_WORD,
+        2 => return .DELETE_WORD,
+        3 => return .SHOW_LIB_CONTENT,
+        4 => return .CHANGE_TRANSLATION,
+        5 => return .BACK_TO_MAIN_MENU,
+        else => {
+            try stdout.print("Wrong option - {d}\n", .{num});
+            return lib_menu_opt();
+        }
+    }
 }
 
 fn main_menu_opt() !MAIN_MENU_OPT {
@@ -85,8 +110,24 @@ fn main_menu_opt() !MAIN_MENU_OPT {
     }
 }
 
-fn lib_menu() !void {
+fn lib_menu(f: *fs.fs) !void {
+    switch(try lib_menu_opt()) {
+        .ADD_WORD => {
 
+        },
+        .SHOW_LIB_CONTENT => {
+            try f.cur_lib.?.showContent();
+        },
+        .DELETE_WORD => {
+
+        },
+        .CHANGE_TRANSLATION => {
+
+        },
+        .BACK_TO_MAIN_MENU => {
+
+        }
+    }
 }
 
 fn main_menu(f: *fs.fs) !void {
@@ -134,8 +175,8 @@ fn main_menu(f: *fs.fs) !void {
                         try stdout.print("Wrong option {s}\n", .{buf});
                         continue;
                     }
-
                 }
+                try lib_menu(f);
             },
             .DELETE_LIB => {
                 for(f.cfg.libs.?.items, 0..) |it, lib_index| {
@@ -224,10 +265,10 @@ fn main_menu(f: *fs.fs) !void {
 }
 
 pub fn main() !void {
-    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    // const allocator = gpa.allocator();
-    // var f = fs.fs{.allocator = allocator, .cfg = .{}};
-    var f= fs.fs{.allocator = std.heap.c_allocator, .cfg = .{}};
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    var f = fs.fs{.allocator = allocator, .cfg = .{}};
+    //var f= fs.fs{.allocator = std.heap.c_allocator, .cfg = .{}};
     try set_user_name(&f);
     try f.readCfg();
     try main_menu(&f);
