@@ -29,7 +29,7 @@ pub const Lib = struct {
         self.changed = true;
     }
 
-    pub fn deletePair(self: *Lib, word: []const u8) void {
+    pub fn deletePair(self: *Lib, word: []const u8) !void {
         const for_delete = self.lib_content.fetchRemove(word) orelse return error.KeyDoestExists;
         self.allocator.free(for_delete.key);
         self.allocator.free(for_delete.value);

@@ -111,21 +111,61 @@ fn main_menu_opt() !MAIN_MENU_OPT {
 }
 
 fn lib_menu(f: *fs.fs) !void {
-    switch(try lib_menu_opt()) {
-        .ADD_WORD => {
-
-        },
-        .SHOW_LIB_CONTENT => {
-            try f.cur_lib.?.showContent();
-        },
-        .DELETE_WORD => {
-
-        },
-        .CHANGE_TRANSLATION => {
-
-        },
-        .BACK_TO_MAIN_MENU => {
-
+    while(true) {
+        switch(try lib_menu_opt()) {
+            .ADD_WORD => {
+                var key_buf: [128]u8 = .{0} ** 128;
+                var val_buf: [256]u8 = .{0} ** 256;
+                try stdout.print("Enter word: ", .{});
+                const key_bytes = try stdin.read(&key_buf);
+                try stdout.print("Enter tranlation: ", .{});
+                const val_bytes = try stdin.read(&val_buf);
+                try f.cur_lib.?.addPair(try f.allocator.dupe(u8, key_buf[0..key_bytes - 1]),
+                    try f.allocator.dupe(u8, val_buf[0..val_bytes - 1]));
+                try stdout.print("Add to lib {s}\nWord - {s}\nTranlation - {s}", 
+                    .{f.cur_lib.?.lib_name, key_buf[0..key_bytes - 1], val_buf[0..val_bytes - 1]});
+            },
+            .SHOW_LIB_CONTENT => {
+                try f.cur_lib.?.showContent();
+            },
+            .DELETE_WORD => {
+                try stdout.print("Enter word to delete: ", .{});
+                var key_buf: [128]u8 = .{0} ** 128;
+                const key_bytes = try stdin.read(&key_buf);
+                f.cur_lib.?.deletePair(key_buf[0..key_bytes - 1]) catch |err| {
+                    switch(err) {
+                        error.KeyDoestExists => {
+                            try stdout.print("Word - {s} doest exists in lib - {s}\n", 
+                                .{key_buf[0..key_bytes - 1], f.cur_lib.?.lib_name});
+                            continue;
+                        }
+                    }
+                };
+                try stdout.print("Word - {s} deleted from lib - {s}\n", .{key_buf, f.cur_lib.?.lib_name});
+            },
+            .CHANGE_TRANSLATION => {
+                try stdout.print("Enter word: ", .{});
+                var key_buf: [128]u8 = .{0} ** 128;
+                var val_buf: [256]u8 = .{0} ** 256;
+                const key_bytes = try stdin.read(&key_buf);
+                try stdout.print("Enter new tranlation: ", .{});
+                const val_bytes = try stdin.read(&val_buf);
+                f.cur_lib.?.changeTranlation(key_buf[0..key_bytes - 1], val_buf[0..val_bytes - 1]) catch |err| {
+                    switch(err) {
+                        error.KeyDoestExists => {
+                            try stdout.print("Word - {s} doest exists in lib - {s}\n", 
+                                .{key_buf[0..key_bytes - 1], f.cur_lib.?.lib_name});
+                            continue;
+                        },
+                        else => {
+                            return err;
+                        }
+                    }
+                };
+            },
+            .BACK_TO_MAIN_MENU => {
+                break;
+            }
         }
     }
 }
@@ -141,7 +181,7 @@ fn main_menu(f: *fs.fs) !void {
         }
     }
 
-    while(true) {
+    main_loop: while(true) {
         switch(try main_menu_opt()) {
             .SELECT_LIB => {
                 try stdout.print("Enter lib number: \n", .{});
@@ -248,16 +288,20 @@ fn main_menu(f: *fs.fs) !void {
                         if (buf[0] == 'y') {
                             try f.writeLib();
                             f.cur_lib.?.freeLib();
+                            break :main_loop;
                         }
                     } else if (buf[0] == 'n') {
-                        break;
+                        f.cur_lib.?.freeLib();
+                        f.cur_lib.?.changed = false;
+                        break :main_loop;
                     } else {
                         try stdout.print("Wrong option {s}\n", .{buf});
                         continue;
                     }
                 } else {
                     f.cur_lib.?.freeLib();
-                    break;
+                    f.cur_lib.?.changed = false;
+                    break :main_loop;
                 }
             }
         }

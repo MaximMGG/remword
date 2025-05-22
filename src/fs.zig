@@ -208,6 +208,7 @@ pub const fs = struct {
                     &[_][]const u8{self.cfg.lib_path.?, "/", self.cur_lib.?.lib_name});
         defer self.allocator.free(lib_path);
         const lib_file = try std.fs.openFileAbsolute(lib_path, .{.mode = .write_only});
+        try lib_file.setEndPos(0);
         defer lib_file.close();
         var buf: [256]u8 = .{0} ** 256;
         while(it.next()) |entry| {
@@ -215,6 +216,7 @@ pub const fs = struct {
             _ = try lib_file.write(pair);
             index += 1;
         }
+        self.cur_lib.?.changed = false;
     }
 
     pub fn deinit(self: *fs) !void {
