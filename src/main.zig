@@ -121,14 +121,15 @@ fn lib_menu(f: *fs.fs) !void {
                 try stdout.print("Enter tranlation or '.' for going to googletranlator: ", .{});
                 var val_bytes = try stdin.read(&val_buf);
                 if (val_bytes == 2 and val_buf[0] == '.') {
-                    try f.cur_lib.?.goToGoogleTranslator(key_buf[0..key_bytes - 1]);
+                    try f.cur_lib.?.goToReversoContext(key_buf[0..key_bytes - 1]);
                     @memset(&val_buf, 0);
                     try stdout.print("Enter tranlation: ", .{});
                     val_bytes = try stdin.read(&val_buf);
+                    //try stdout.print("\n", .{});
                 }
                 try f.cur_lib.?.addPair(try f.allocator.dupe(u8, key_buf[0..key_bytes - 1]),
                     try f.allocator.dupe(u8, val_buf[0..val_bytes - 1]));
-                try stdout.print("Add to lib {s}\nWord - {s}\nTranlation - {s}", 
+                try stdout.print("Add to lib {s}\nWord - {s}\nTranlation - {s}\n", 
                     .{f.cur_lib.?.lib_name, key_buf[0..key_bytes - 1], val_buf[0..val_bytes - 1]});
             },
             .SHOW_LIB_CONTENT => {

@@ -144,7 +144,7 @@ pub const fs = struct {
         var i: usize = 0;
         var key_buf: [128]u8 = .{0} ** 128;
         var k_i: usize = 0;
-        var val_buf: [128]u8 = .{0} ** 128;
+        var val_buf: [256]u8 = .{0} ** 256;
         var v_i: usize = 0;
         while(i < lib_buf.len) : (i += 1){
             if (lib_buf[i] == '\"') {
@@ -160,15 +160,16 @@ pub const fs = struct {
                     val_buf[v_i] = lib_buf[i];
                     v_i += 1;
                 }
-                std.debug.print("Key - {s}\n", .{key_buf});
-                std.debug.print("Val - {s}\n", .{val_buf});
-
+                // std.debug.print("Key - {s}\n", .{key_buf});
+                // std.debug.print("Val - {s}\n", .{val_buf});
                 try self.cur_lib.?.lib_content.put( try self.allocator.dupe(u8, key_buf[0..k_i]),
                                                 try self.allocator.dupe(u8, val_buf[0..v_i]));
 
                 //while(key_buf[i] != '\"' and i < lib_buf.len) : (i += 1) {}
                 @memset(&key_buf, 0);
                 @memset(&val_buf, 0);
+                k_i = 0;
+                v_i = 0;
             }
         }
     }

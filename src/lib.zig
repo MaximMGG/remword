@@ -1,6 +1,7 @@
 const std = @import("std");
 const c = @cImport({
     @cInclude("stdlib.h");
+    @cInclude("unistd.h");
 });
 
 const stdout = std.io.getStdOut().writer();
@@ -47,10 +48,15 @@ pub const Lib = struct {
         }
         self.lib_content.deinit();
     }
-    pub fn goToGoogleTranslator(self: *Lib, word: []u8) !void {
+    pub fn goToReversoContext(self: *Lib, word: []u8) !void {
         _ = self;
-        var buf: [256]u8 = .{0} ** 256;
-        const to_execute =  try std.fmt.bufPrint(&buf, "google-chrome https://context.reverso.net/translation/english-russian/{s}", .{word});
-        _ = c.system(to_execute.ptr);
+        const pid = c.fork();
+        if (pid == 0) {
+            var buf: [256]u8 = .{0} ** 256;
+            const to_execute =  try std.fmt.bufPrint(&buf,
+                "google-chrome https://context.reverso.net/translation/english-russian/{s} > /dev/null", .{word});
+            _ = c.system(to_execute.ptr);
+            c._exit(0);
+        }
     }
 };
