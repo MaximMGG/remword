@@ -118,8 +118,14 @@ fn lib_menu(f: *fs.fs) !void {
                 var val_buf: [256]u8 = .{0} ** 256;
                 try stdout.print("Enter word: ", .{});
                 const key_bytes = try stdin.read(&key_buf);
-                try stdout.print("Enter tranlation: ", .{});
-                const val_bytes = try stdin.read(&val_buf);
+                try stdout.print("Enter tranlation or '.' for going to googletranlator: ", .{});
+                var val_bytes = try stdin.read(&val_buf);
+                if (val_bytes == 2 and val_buf[0] == '.') {
+                    try f.cur_lib.?.goToGoogleTranslator(key_buf[0..key_bytes - 1]);
+                    @memset(&val_buf, 0);
+                    try stdout.print("Enter tranlation: ", .{});
+                    val_bytes = try stdin.read(&val_buf);
+                }
                 try f.cur_lib.?.addPair(try f.allocator.dupe(u8, key_buf[0..key_bytes - 1]),
                     try f.allocator.dupe(u8, val_buf[0..val_bytes - 1]));
                 try stdout.print("Add to lib {s}\nWord - {s}\nTranlation - {s}", 
