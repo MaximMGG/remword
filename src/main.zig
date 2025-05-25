@@ -7,13 +7,7 @@ const unistd = @cImport({
 const stdout = std.io.getStdOut().writer();
 const stdin = std.io.getStdIn().reader();
 
-const MAIN_MENU_OPT = enum {
-    CREATE_LIB,
-    DELETE_LIB,
-    CHANGE_LIB_PATH,
-    SELECT_LIB,
-    EXIT
-};
+const MAIN_MENU_OPT = enum { CREATE_LIB, DELETE_LIB, CHANGE_LIB_PATH, SELECT_LIB, EXIT };
 
 const LIB_MENU_OPT = enum {
     ADD_WORD,
@@ -31,7 +25,7 @@ fn set_user_name(f: *fs.fs) !void {
         const cwd = try std.posix.getcwd(&cwd_buf);
         var index = std.mem.indexOfScalar(u8, cwd[1..cwd.len], '/') orelse return;
         index += 2;
-        for(0..128) |i| {
+        for (0..128) |i| {
             if (cwd[index] == '/') {
                 f.cfg.user_name = try f.allocator.dupe(u8, name_buf[0..i]);
                 break;
@@ -40,7 +34,7 @@ fn set_user_name(f: *fs.fs) !void {
             index += 1;
         }
     } else {
-        for(0..64) |i| {
+        for (0..64) |i| {
             if (user_name[i] == 0) {
                 f.cfg.user_name = try f.allocator.dupe(u8, name_buf[0..i]);
                 break;
@@ -86,8 +80,8 @@ fn main_menu_opt() !MAIN_MENU_OPT {
     try stdout.print("5 - EXIT\n", .{});
     var input_buf: [16]u8 = .{0} ** 16;
     const read_bytes = try stdin.read(&input_buf);
-    const input = try std.fmt.parseInt(u32, input_buf[0..read_bytes - 1], 10);
-    switch(input) {
+    const input = try std.fmt.parseInt(u32, input_buf[0 .. read_bytes - 1], 10);
+    switch (input) {
         1 => {
             return .SELECT_LIB;
         },
@@ -106,7 +100,7 @@ fn main_menu_opt() !MAIN_MENU_OPT {
         else => {
             try stdout.print("Incorect options - {d}\nTry agane", .{input});
             return main_menu_opt();
-        }
+        },
     }
 }
 
@@ -176,7 +170,6 @@ fn lib_menu(f: *fs.fs) !void {
         }
     }
 }
-
 fn main_menu(f: *fs.fs) !void {
     try stdout.print("Hello diar {s}, welcome to memorizeble!\n", .{f.cfg.user_name.?});
     if (f.cfg.lib_path == null) {
@@ -184,7 +177,7 @@ fn main_menu(f: *fs.fs) !void {
         var path_buf: [128]u8 = .{0} ** 128;
         const read_bytes = try stdin.read(&path_buf);
         if (read_bytes > 0) {
-            f.cfg.lib_path = try f.allocator.dupe(u8, path_buf[0..read_bytes - 1]);
+            f.cfg.lib_path = try f.allocator.dupe(u8, path_buf[0 .. read_bytes - 1]);
         }
     }
 
@@ -192,8 +185,8 @@ fn main_menu(f: *fs.fs) !void {
         switch(try main_menu_opt()) {
             .SELECT_LIB => {
                 try stdout.print("Enter lib number: \n", .{});
-                for(f.cfg.libs.?.items, 0..) |lib, lib_number| {
-                    try stdout.print("{d} - {s}\n", .{lib_number + 1, lib});
+                for (f.cfg.libs.?.items, 0..) |lib, lib_number| {
+                    try stdout.print("{d} - {s}\n", .{ lib_number + 1, lib });
                 }
                 var num_buf: [16]u8 = .{0} ** 16;
                 var read_bytes = try stdin.read(&num_buf);
@@ -226,13 +219,13 @@ fn main_menu(f: *fs.fs) !void {
                 try lib_menu(f);
             },
             .DELETE_LIB => {
-                for(f.cfg.libs.?.items, 0..) |it, lib_index| {
-                    try stdout.print("{d} - {s}\n", .{lib_index + 1, it});
+                for (f.cfg.libs.?.items, 0..) |it, lib_index| {
+                    try stdout.print("{d} - {s}\n", .{ lib_index + 1, it });
                 }
                 try stdout.print("Enter lib number: \n", .{});
                 var buf: [16]u8 = .{0} ** 16;
                 var read_bytes = try stdin.read(&buf);
-                const num = try std.fmt.parseInt(u32, buf[0..read_bytes - 1], 10);
+                const num = try std.fmt.parseInt(u32, buf[0 .. read_bytes - 1], 10);
                 if (num <= 0 and num >= f.cfg.libs.?.items.len) {
                     try stdout.print("Incorrect lib number {d}\n", .{num});
                     continue;
@@ -257,8 +250,8 @@ fn main_menu(f: *fs.fs) !void {
                 try stdout.print("Enter new lib name: ", .{});
                 var buf: [128]u8 = .{0} ** 128;
                 const read_bytes = try stdin.read(&buf);
-                try f.createLib(buf[0..read_bytes - 1]);
-                try stdout.print("Created lib: {s}\n", .{buf[0..read_bytes - 1]});
+                try f.createLib(buf[0 .. read_bytes - 1]);
+                try stdout.print("Created lib: {s}\n", .{buf[0 .. read_bytes - 1]});
             },
             .CHANGE_LIB_PATH => {
                 try stdout.print("Your current path to word dir - {s}\n", .{f.cfg.lib_path.?});
@@ -310,7 +303,8 @@ fn main_menu(f: *fs.fs) !void {
                     f.cur_lib.?.changed = false;
                     break :main_loop;
                 }
-            }
+                break;
+            },
         }
     }
 }
@@ -333,15 +327,14 @@ pub fn cleanup(f: *fs.fs) void {
 }
 
 test "set_user_name_test" {
-    var f = fs.fs{.allocator = std.testing.allocator, .cfg = .{}};
+    var f = fs.fs{ .allocator = std.testing.allocator, .cfg = .{} };
     try set_user_name(&f);
     defer f.deinit();
 }
 
 test "readCfgNullTest" {
-    var f = fs.fs{.allocator = std.testing.allocator, .cfg = .{}};
+    var f = fs.fs{ .allocator = std.testing.allocator, .cfg = .{} };
     try set_user_name(&f);
     try f.readCfg();
     defer f.deinit();
-
 }
