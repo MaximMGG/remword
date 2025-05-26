@@ -6,6 +6,8 @@ const c = @cImport({
 
 const stdout = std.io.getStdOut().writer();
 
+pub const Word = struct { key: []u8, val: []u8, well_known: f32 = 0.0, know_tranlation: bool = false, know_how_write: bool = false };
+
 pub const Lib = struct {
     lib_content: std.StringHashMap([]const u8),
     allocator: std.mem.Allocator,
@@ -15,8 +17,8 @@ pub const Lib = struct {
     pub fn showContent(self: *Lib) !void {
         var it = self.lib_content.iterator();
         var index: u32 = 1;
-        while(it.next()) |pair| {
-            try stdout.print("{d}. {s} - {s}\n", .{index, pair.key_ptr.*, pair.value_ptr.*});
+        while (it.next()) |pair| {
+            try stdout.print("{d}. {s} - {s}\n", .{ index, pair.key_ptr.*, pair.value_ptr.* });
             index += 1;
         }
     }
@@ -42,7 +44,7 @@ pub const Lib = struct {
 
     pub fn freeLib(self: *Lib) void {
         var it = self.lib_content.iterator();
-        while(it.next()) |entry| {
+        while (it.next()) |entry| {
             self.allocator.free(entry.key_ptr.*);
             self.allocator.free(entry.value_ptr.*);
         }
@@ -53,8 +55,7 @@ pub const Lib = struct {
         const pid = c.fork();
         if (pid == 0) {
             var buf: [256]u8 = .{0} ** 256;
-            const to_execute =  try std.fmt.bufPrint(&buf,
-                "google-chrome https://context.reverso.net/translation/english-russian/{s} > /dev/null", .{word});
+            const to_execute = try std.fmt.bufPrint(&buf, "google-chrome https://context.reverso.net/translation/english-russian/{s} > /dev/null", .{word});
             _ = c.system(to_execute.ptr);
             c._exit(0);
         }

@@ -44,10 +44,10 @@ fn set_user_name(f: *fs.fs) !void {
     }
 }
 
-    // ADD_WORD,
-    // DELETE_WORD,
-    // SHOW_LIB_CONTENT,
-    // CHANGE_TRANSLATION,
+// ADD_WORD,
+// DELETE_WORD,
+// SHOW_LIB_CONTENT,
+// CHANGE_TRANSLATION,
 fn lib_menu_opt() !LIB_MENU_OPT {
     try stdout.print("Select lib options\n", .{});
     try stdout.print("1 - ADD WORD\n", .{});
@@ -57,8 +57,8 @@ fn lib_menu_opt() !LIB_MENU_OPT {
     try stdout.print("5 - BACK TO MAIN MENU\n", .{});
     var num_buf: [16]u8 = .{0} ** 16;
     const read_bytes = try stdin.read(&num_buf);
-    const num = try std.fmt.parseInt(u32, num_buf[0..read_bytes - 1], 10);
-    switch(num) {
+    const num = try std.fmt.parseInt(u32, num_buf[0 .. read_bytes - 1], 10);
+    switch (num) {
         1 => return .ADD_WORD,
         2 => return .DELETE_WORD,
         3 => return .SHOW_LIB_CONTENT,
@@ -67,7 +67,7 @@ fn lib_menu_opt() !LIB_MENU_OPT {
         else => {
             try stdout.print("Wrong option - {d}\n", .{num});
             return lib_menu_opt();
-        }
+        },
     }
 }
 
@@ -105,8 +105,8 @@ fn main_menu_opt() !MAIN_MENU_OPT {
 }
 
 fn lib_menu(f: *fs.fs) !void {
-    while(true) {
-        switch(try lib_menu_opt()) {
+    while (true) {
+        switch (try lib_menu_opt()) {
             .ADD_WORD => {
                 var key_buf: [128]u8 = .{0} ** 128;
                 var val_buf: [256]u8 = .{0} ** 256;
@@ -115,16 +115,14 @@ fn lib_menu(f: *fs.fs) !void {
                 try stdout.print("Enter tranlation or '.' for going to googletranlator: ", .{});
                 var val_bytes = try stdin.read(&val_buf);
                 if (val_bytes == 2 and val_buf[0] == '.') {
-                    try f.cur_lib.?.goToReversoContext(key_buf[0..key_bytes - 1]);
+                    try f.cur_lib.?.goToReversoContext(key_buf[0 .. key_bytes - 1]);
                     @memset(&val_buf, 0);
                     try stdout.print("Enter tranlation: ", .{});
                     val_bytes = try stdin.read(&val_buf);
                     //try stdout.print("\n", .{});
                 }
-                try f.cur_lib.?.addPair(try f.allocator.dupe(u8, key_buf[0..key_bytes - 1]),
-                    try f.allocator.dupe(u8, val_buf[0..val_bytes - 1]));
-                try stdout.print("Add to lib {s}\nWord - {s}\nTranlation - {s}\n", 
-                    .{f.cur_lib.?.lib_name, key_buf[0..key_bytes - 1], val_buf[0..val_bytes - 1]});
+                try f.cur_lib.?.addPair(try f.allocator.dupe(u8, key_buf[0 .. key_bytes - 1]), try f.allocator.dupe(u8, val_buf[0 .. val_bytes - 1]));
+                try stdout.print("Add to lib {s}\nWord - {s}\nTranlation - {s}\n", .{ f.cur_lib.?.lib_name, key_buf[0 .. key_bytes - 1], val_buf[0 .. val_bytes - 1] });
             },
             .SHOW_LIB_CONTENT => {
                 try f.cur_lib.?.showContent();
@@ -133,16 +131,15 @@ fn lib_menu(f: *fs.fs) !void {
                 try stdout.print("Enter word to delete: ", .{});
                 var key_buf: [128]u8 = .{0} ** 128;
                 const key_bytes = try stdin.read(&key_buf);
-                f.cur_lib.?.deletePair(key_buf[0..key_bytes - 1]) catch |err| {
-                    switch(err) {
+                f.cur_lib.?.deletePair(key_buf[0 .. key_bytes - 1]) catch |err| {
+                    switch (err) {
                         error.KeyDoestExists => {
-                            try stdout.print("Word - {s} doest exists in lib - {s}\n", 
-                                .{key_buf[0..key_bytes - 1], f.cur_lib.?.lib_name});
+                            try stdout.print("Word - {s} doest exists in lib - {s}\n", .{ key_buf[0 .. key_bytes - 1], f.cur_lib.?.lib_name });
                             continue;
-                        }
+                        },
                     }
                 };
-                try stdout.print("Word - {s} deleted from lib - {s}\n", .{key_buf, f.cur_lib.?.lib_name});
+                try stdout.print("Word - {s} deleted from lib - {s}\n", .{ key_buf, f.cur_lib.?.lib_name });
             },
             .CHANGE_TRANSLATION => {
                 try stdout.print("Enter word: ", .{});
@@ -151,22 +148,21 @@ fn lib_menu(f: *fs.fs) !void {
                 const key_bytes = try stdin.read(&key_buf);
                 try stdout.print("Enter new tranlation: ", .{});
                 const val_bytes = try stdin.read(&val_buf);
-                f.cur_lib.?.changeTranlation(key_buf[0..key_bytes - 1], val_buf[0..val_bytes - 1]) catch |err| {
-                    switch(err) {
+                f.cur_lib.?.changeTranlation(key_buf[0 .. key_bytes - 1], val_buf[0 .. val_bytes - 1]) catch |err| {
+                    switch (err) {
                         error.KeyDoestExists => {
-                            try stdout.print("Word - {s} doest exists in lib - {s}\n", 
-                                .{key_buf[0..key_bytes - 1], f.cur_lib.?.lib_name});
+                            try stdout.print("Word - {s} doest exists in lib - {s}\n", .{ key_buf[0 .. key_bytes - 1], f.cur_lib.?.lib_name });
                             continue;
                         },
                         else => {
                             return err;
-                        }
+                        },
                     }
                 };
             },
             .BACK_TO_MAIN_MENU => {
                 break;
-            }
+            },
         }
     }
 }
@@ -181,8 +177,8 @@ fn main_menu(f: *fs.fs) !void {
         }
     }
 
-    main_loop: while(true) {
-        switch(try main_menu_opt()) {
+    main_loop: while (true) {
+        switch (try main_menu_opt()) {
             .SELECT_LIB => {
                 try stdout.print("Enter lib number: \n", .{});
                 for (f.cfg.libs.?.items, 0..) |lib, lib_number| {
@@ -190,7 +186,7 @@ fn main_menu(f: *fs.fs) !void {
                 }
                 var num_buf: [16]u8 = .{0} ** 16;
                 var read_bytes = try stdin.read(&num_buf);
-                const num = try std.fmt.parseInt(u32, num_buf[0..read_bytes - 1], 10);
+                const num = try std.fmt.parseInt(u32, num_buf[0 .. read_bytes - 1], 10);
                 if ((num - 1) >= f.cfg.libs.?.items.len) {
                     try stdout.print("Lib with number {d} not existes\n", .{num});
                     continue;
@@ -264,7 +260,7 @@ fn main_menu(f: *fs.fs) !void {
                     const read_bytes = try stdin.read(&buf);
                     if (read_bytes > 1) {
                         f.allocator.free(f.cfg.lib_path.?);
-                        f.cfg.lib_path = try f.allocator.dupe(u8, buf[0..read_bytes - 1]);
+                        f.cfg.lib_path = try f.allocator.dupe(u8, buf[0 .. read_bytes - 1]);
                         try stdout.print("You new work dir path: {s}\n", .{f.cfg.lib_path.?});
                     } else {
                         try stdout.print("You do not enter path\n", .{});
@@ -312,7 +308,7 @@ fn main_menu(f: *fs.fs) !void {
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var f = fs.fs{.allocator = allocator, .cfg = .{}};
+    var f = fs.fs{ .allocator = allocator, .cfg = .{} };
     //var f= fs.fs{.allocator = std.heap.c_allocator, .cfg = .{}};
     try set_user_name(&f);
     try f.readCfg();
