@@ -6,25 +6,48 @@ const c = @cImport({
 
 const stdout = std.io.getStdOut().writer();
 
-pub const Word = struct { key: []u8, val: []u8, well_known: f32 = 0.0, know_tranlation: bool = false, know_how_write: bool = false };
+pub const Word = struct {
+    key: []u8,
+    val: []u8,
+    well_known: f32 = 0.0,
+    known_tranlation: bool = false,
+    known_how_write: bool = false,
+
+    pub fn create(allocator: std.mem.Allocator, key: []const u8, val: []const u8, well_known: f32, known_tr: bool, known_how_write: bool) !*Word {
+        const w = try allocator.create(Word);
+        w.key = try allocator.dupe(u8, key);
+        w.val = try allocator.dupe(u8, val);
+        w.well_known = well_known;
+        w.known_tranlation = known_tr;
+        w.known_how_write = known_how_write;
+
+        return w;
+    }
+
+    pub fn destroy(allocator: std.mem.Allocator, self: *Word) void {
+        allocator.free(self.key);
+        allocator.free(self.val);
+        allocator.destroy(self);
+    }
+};
 
 pub const Lib = struct {
-    lib_content: std.StringHashMap([]const u8),
+    lib_content: std.ArrayList(*Word),
     allocator: std.mem.Allocator,
     lib_name: []const u8,
     changed: bool = false,
 
     pub fn showContent(self: *Lib) !void {
-        var it = self.lib_content.iterator();
-        var index: u32 = 1;
-        while (it.next()) |pair| {
-            try stdout.print("{d}. {s} - {s}\n", .{ index, pair.key_ptr.*, pair.value_ptr.* });
+        var index: usize = 1;
+        while (self.lib_content.items) |i| {
+            try stdout.print("{d}. {s} - {s}\n", .{index, i.key, i.val});
             index += 1;
         }
     }
 
-    pub fn addPair(self: *Lib, word: []const u8, tranlation: []const u8) !void {
-        try self.lib_content.put(word, tranlation);
+    pub fn addPair(self: *Lib, word: []const u8, tranlation: []const u8, well_known: f32, known_translation: bool, known_how_write: bool) !void {
+        var w = try Word.create(self.allocator, word, tranlation, well_known, known_translation, known_how_write);
+        try self.lib_content.append(w);
         self.changed = true;
     }
 
