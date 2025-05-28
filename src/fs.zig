@@ -162,9 +162,10 @@ pub const fs = struct {
                 }
                 // std.debug.print("Key - {s}\n", .{key_buf});
                 // std.debug.print("Val - {s}\n", .{val_buf});
-                try self.cur_lib.?.lib_content.put( try self.allocator.dupe(u8, key_buf[0..k_i]),
-                                                try self.allocator.dupe(u8, val_buf[0..v_i]));
+                // try self.cur_lib.?.lib_content.put( try self.allocator.dupe(u8, key_buf[0..k_i]),
+                //                                 try self.allocator.dupe(u8, val_buf[0..v_i]));
 
+                try self.cur_lib.?.addPair(key_buf[0..k_i], val_buf[0..v_i], 0.0, false, false);
                 //while(key_buf[i] != '\"' and i < lib_buf.len) : (i += 1) {}
                 @memset(&key_buf, 0);
                 @memset(&val_buf, 0);
@@ -179,10 +180,11 @@ pub const fs = struct {
             self.cur_lib = lib.Lib{
                 .lib_name = self.cfg.libs.?.items[lib_index], 
                 .allocator = self.allocator, 
-                .lib_content = std.StringHashMap([]const u8).init(self.allocator)};
+                .lib_content = std.ArrayList(*lib.Word).init(self.allocator),
+            };
         } else {
             self.cur_lib.?.freeLib();
-            self.cur_lib.?.lib_content = std.StringHashMap([]const u8).init(self.allocator);
+            self.cur_lib.?.lib_content = std.ArrayList(*lib.Word).init(self.allocator);
             self.cur_lib.?.lib_name = self.cfg.libs.?.items[lib_index];
             self.cur_lib.?.changed = false;
         }
@@ -204,7 +206,6 @@ pub const fs = struct {
 
     pub fn writeLib(self: *fs) !void {
         var index: usize = 1;
-        var it = self.cur_lib.?.lib_content.iterator();
         const lib_path = try std.mem.concat(self.allocator, u8, 
                     &[_][]const u8{self.cfg.lib_path.?, "/", self.cur_lib.?.lib_name});
         defer self.allocator.free(lib_path);
@@ -212,11 +213,12 @@ pub const fs = struct {
         try lib_file.setEndPos(0);
         defer lib_file.close();
         var buf: [256]u8 = .{0} ** 256;
-        while(it.next()) |entry| {
-            const pair = try std.fmt.bufPrint(&buf, "{d}. \"{s}\" - \"{s}\"\n", .{index, entry.key_ptr.*, entry.value_ptr.*});
-            _ = try lib_file.write(pair);
+        for(self.cur_lib.?.lib_content.items) |word| {
+            const buf_to_write = try std.fmt.bufPrint(&buf, "{d}. \"{s}\" - \"{s}\"\n", .{index, word.key, word.val});
             index += 1;
+            _ = try lib_file.write(buf_to_write);
         }
+
         self.cur_lib.?.changed = false;
     }
 

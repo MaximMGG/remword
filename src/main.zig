@@ -121,7 +121,10 @@ fn lib_menu(f: *fs.fs) !void {
                     val_bytes = try stdin.read(&val_buf);
                     //try stdout.print("\n", .{});
                 }
-                try f.cur_lib.?.addPair(try f.allocator.dupe(u8, key_buf[0 .. key_bytes - 1]), try f.allocator.dupe(u8, val_buf[0 .. val_bytes - 1]));
+                try f.cur_lib.?.addPair(
+                    key_buf[0..key_bytes - 1], 
+                    val_buf[0..val_bytes - 1], 
+                    0.0, false, false);
                 try stdout.print("Add to lib {s}\nWord - {s}\nTranlation - {s}\n", .{ f.cur_lib.?.lib_name, key_buf[0 .. key_bytes - 1], val_buf[0 .. val_bytes - 1] });
             },
             .SHOW_LIB_CONTENT => {
@@ -133,7 +136,7 @@ fn lib_menu(f: *fs.fs) !void {
                 const key_bytes = try stdin.read(&key_buf);
                 f.cur_lib.?.deletePair(key_buf[0 .. key_bytes - 1]) catch |err| {
                     switch (err) {
-                        error.KeyDoestExists => {
+                        error.WordDoesntExists => {
                             try stdout.print("Word - {s} doest exists in lib - {s}\n", .{ key_buf[0 .. key_bytes - 1], f.cur_lib.?.lib_name });
                             continue;
                         },
@@ -150,7 +153,7 @@ fn lib_menu(f: *fs.fs) !void {
                 const val_bytes = try stdin.read(&val_buf);
                 f.cur_lib.?.changeTranlation(key_buf[0 .. key_bytes - 1], val_buf[0 .. val_bytes - 1]) catch |err| {
                     switch (err) {
-                        error.KeyDoestExists => {
+                        error.WordDoesntExists => {
                             try stdout.print("Word - {s} doest exists in lib - {s}\n", .{ key_buf[0 .. key_bytes - 1], f.cur_lib.?.lib_name });
                             continue;
                         },
