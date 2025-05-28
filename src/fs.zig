@@ -236,22 +236,22 @@ pub const fs = struct {
         defer lib_file.close();
         var buf: [256]u8 = .{0} ** 256;
         for(self.cur_lib.?.lib_content.items) |word| {
-            var kt: u8 = undefined;
-            if (word.known_translation) {
-                kt = 't';
-            } else {
-                kt = 'f';
-            }
-            var kw: u8 = undefined;
-            if (word.known_how_write) {
-                kw = 't';
-            } else {
-                kw = 'f';
-            }
+            // var kt: u8 = undefined;
+            // if (word.known_translation) {
+            //     kt = 't';
+            // } else {
+            //     kt = 'f';
+            // }
+            // var kw: u8 = undefined;
+            // if (word.known_how_write) {
+            //     kw = 't';
+            // } else {
+            //     kw = 'f';
+            // }
             const buf_to_write = try std.fmt.bufPrint(&buf, "{d}. \"{s}\" - \"{s}\" {d} {c} {c}\n", 
-                .{index, word.key, word.val, word.well_known, kt, kw});
-                    // if (word.known_translation == true) 't' else 'f',
-                    // if (word.known_write == true) 't' else 'f'});
+                .{index, word.key, word.val, word.well_known, //kt, kw});
+                    if (word.known_translation == true) @as(u8, 't') else @as(u8, 'f'),
+                    if (word.known_how_write == true) @as(u8, 't') else @as(u8, 'f')});
             index += 1;
             _ = try lib_file.write(buf_to_write);
         }
