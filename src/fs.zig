@@ -146,6 +146,10 @@ pub const fs = struct {
         var k_i: usize = 0;
         var val_buf: [256]u8 = .{0} ** 256;
         var v_i: usize = 0;
+        var known_level: [16]u8 = .{0} ** 16;
+        var level_i: usize = 0;
+        var known_translation: bool = false;
+        var known_write: bool = false;
         while(i < lib_buf.len) : (i += 1){
             if (lib_buf[i] == '\"') {
                 i += 1;
@@ -160,19 +164,36 @@ pub const fs = struct {
                     val_buf[v_i] = lib_buf[i];
                     v_i += 1;
                 }
-                // std.debug.print("Key - {s}\n", .{key_buf});
-                // std.debug.print("Val - {s}\n", .{val_buf});
-                // try self.cur_lib.?.lib_content.put( try self.allocator.dupe(u8, key_buf[0..k_i]),
-                //                                 try self.allocator.dupe(u8, val_buf[0..v_i]));
+                i += 2;
+                while(lib_buf[i] != ' ') : (i += 1) {
+                    known_level[level_i] = lib_buf[i];
+                    level_i += 1;
+                }
+                i += 1;
+                if (lib_buf[i] == 't') {
+                    known_translation = true;
+                } else if (lib_buf[i] == 'f') {
+                    known_translation = false;
+                }
+                i += 1;
+                if (lib_buf[i] == 't') {
+                    known_write = true;
+                } else if (lib_buf[i] == 'f') {
+                    known_write = false;
+                }
 
-                try self.cur_lib.?.addPair(key_buf[0..k_i], val_buf[0..v_i], 0.0, false, false);
+                const level: f32 = try std.fmt.parseFloat(f32, known_level[0..level_i]);
+                try self.cur_lib.?.addPair(key_buf[0..k_i], val_buf[0..v_i], level, known_translation, known_write);
                 //while(key_buf[i] != '\"' and i < lib_buf.len) : (i += 1) {}
                 @memset(&key_buf, 0);
                 @memset(&val_buf, 0);
+                @memset(&known_level, 0);
                 k_i = 0;
                 v_i = 0;
+                level_i = 0;
             }
         }
+        self.cur_lib.?.changed = false;
     }
 
     pub fn selectLib(self: *fs, lib_index: u32) !void {
@@ -181,6 +202,7 @@ pub const fs = struct {
                 .lib_name = self.cfg.libs.?.items[lib_index], 
                 .allocator = self.allocator, 
                 .lib_content = std.ArrayList(*lib.Word).init(self.allocator),
+                .changed = false
             };
         } else {
             self.cur_lib.?.freeLib();
@@ -214,7 +236,22 @@ pub const fs = struct {
         defer lib_file.close();
         var buf: [256]u8 = .{0} ** 256;
         for(self.cur_lib.?.lib_content.items) |word| {
-            const buf_to_write = try std.fmt.bufPrint(&buf, "{d}. \"{s}\" - \"{s}\"\n", .{index, word.key, word.val});
+            var kt: u8 = undefined;
+            if (word.known_translation) {
+                kt = 't';
+            } else {
+                kt = 'f';
+            }
+            var kw: u8 = undefined;
+            if (word.known_how_write) {
+                kw = 't';
+            } else {
+                kw = 'f';
+            }
+            const buf_to_write = try std.fmt.bufPrint(&buf, "{d}. \"{s}\" - \"{s}\" {d} {c} {c}\n", 
+                .{index, word.key, word.val, word.well_known, kt, kw});
+                    // if (word.known_translation == true) 't' else 'f',
+                    // if (word.known_write == true) 't' else 'f'});
             index += 1;
             _ = try lib_file.write(buf_to_write);
         }

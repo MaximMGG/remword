@@ -312,7 +312,7 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var f = fs.fs{ .allocator = allocator, .cfg = .{} };
-    //var f= fs.fs{.allocator = std.heap.c_allocator, .cfg = .{}};
+    // var f= fs.fs{.allocator = std.heap.c_allocator, .cfg = .{}};
     try set_user_name(&f);
     try f.readCfg();
     try main_menu(&f);
