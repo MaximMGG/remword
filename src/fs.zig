@@ -140,6 +140,13 @@ pub const fs = struct {
         }
     }
 
+    pub fn createLibFromFile(f: *fs, path_to_file: []const u8, file_name: []u8) !void {
+        const file_path = try std.mem.concat(f.allocator, u8, &[_][]const u8{path_to_file, "/", file_name});
+        const file = try std.fs.openFileAbsolute(file_path, .{.mode = .read_only});
+        const buf_file = try file.reader().readAllAlloc(f.allocator, 40960);
+
+    }
+
     fn parseLib(self: *fs, lib_buf: []u8) !void {
         var i: usize = 0;
         var key_buf: [128]u8 = .{0} ** 128;

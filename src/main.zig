@@ -7,7 +7,13 @@ const unistd = @cImport({
 const stdout = std.io.getStdOut().writer();
 const stdin = std.io.getStdIn().reader();
 
-const MAIN_MENU_OPT = enum { CREATE_LIB, DELETE_LIB, CHANGE_LIB_PATH, SELECT_LIB, EXIT };
+const MAIN_MENU_OPT = enum { 
+    CREATE_LIB, 
+    CREATE_LIB_FROM_FILE,
+    DELETE_LIB, 
+    CHANGE_LIB_PATH, 
+    SELECT_LIB, 
+    EXIT };
 
 const LIB_MENU_OPT = enum {
     ADD_WORD,
@@ -76,8 +82,9 @@ fn main_menu_opt() !MAIN_MENU_OPT {
     try stdout.print("1 - SELECT LIB\n", .{});
     try stdout.print("2 - DELETE LIB\n", .{});
     try stdout.print("3 - CREATE LIB\n", .{});
-    try stdout.print("3 - CHANGE LIB PATH\n", .{});
-    try stdout.print("5 - EXIT\n", .{});
+    try stdout.print("4 - CREATE LIB FROM FILE\n", .{});
+    try stdout.print("5 - CHANGE LIB PATH\n", .{});
+    try stdout.print("6 - EXIT\n", .{});
     var input_buf: [16]u8 = .{0} ** 16;
     const read_bytes = try stdin.read(&input_buf);
     const input = try std.fmt.parseInt(u32, input_buf[0 .. read_bytes - 1], 10);
@@ -92,9 +99,12 @@ fn main_menu_opt() !MAIN_MENU_OPT {
             return .CREATE_LIB;
         },
         4 => {
-            return .CHANGE_LIB_PATH;
+            return .CREATE_LIB_FROM_FILE;
         },
         5 => {
+            return .CHANGE_LIB_PATH;
+        },
+        6 => {
             return .EXIT;
         },
         else => {
@@ -184,6 +194,10 @@ fn main_menu(f: *fs.fs) !void {
         switch (try main_menu_opt()) {
             .SELECT_LIB => {
                 try stdout.print("Enter lib number: \n", .{});
+                if (f.cfg.libs == null) {
+                    try stdout.print("You don't have any libs here, please create new one!\n", .{});
+                    continue;
+                }
                 for (f.cfg.libs.?.items, 0..) |lib, lib_number| {
                     try stdout.print("{d} - {s}\n", .{ lib_number + 1, lib });
                 }
@@ -251,6 +265,12 @@ fn main_menu(f: *fs.fs) !void {
                 const read_bytes = try stdin.read(&buf);
                 try f.createLib(buf[0 .. read_bytes - 1]);
                 try stdout.print("Created lib: {s}\n", .{buf[0 .. read_bytes - 1]});
+            },
+            .CREATE_LIB_FROM_FILE => {
+                try stdout.print("Enter path to file: ", .{});
+                var path_buf: [256]u8 = .{0} ** 256;
+                const path_bytes = try stdin.read(&path_buf);
+
             },
             .CHANGE_LIB_PATH => {
                 try stdout.print("Your current path to word dir - {s}\n", .{f.cfg.lib_path.?});
