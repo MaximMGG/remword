@@ -140,11 +140,39 @@ pub const fs = struct {
         }
     }
 
-    pub fn createLibFromFile(f: *fs, path_to_file: []const u8, file_name: []u8) !void {
+    pub fn createLibFromFile(f: *fs, path_to_file: []const u8, file_name: []const u8, lib_name: []const u8) !void {
         const file_path = try std.mem.concat(f.allocator, u8, &[_][]const u8{path_to_file, "/", file_name});
+        defer f.allocator.free(file_path);
         const file = try std.fs.openFileAbsolute(file_path, .{.mode = .read_only});
         const buf_file = try file.reader().readAllAlloc(f.allocator, 40960);
+        const new_lib_path = try std.mem.concat(f.allocator, u8, &[_][]const u8 {f.cfg.lib_path.?, "/", lib_name});
+        const new_lib = try std.fs.createFileAbsolute(new_lib_path, .{});
+        defer new_lib.close();
+        try f.cfg.libs.?.append(try f.allocator.dupe(u8, lib_name));
+        try f.selectLib(@intCast(f.cfg.libs.?.items.len - 1));
 
+        var i: usize = 0;
+        var key: [128]u8 = .{0} ** 128;
+        var k_i: usize = 0;
+        var val: [256]u8 = .{0} ** 256;
+        var v_i: usize =0;
+        while(i < buf_file.len) : (i += 1) {
+            while(buf_file[i] != '-') : (i += 1){
+                key[k_i] = buf_file[i];
+                k_i += 1;
+            }
+            i += 1;
+            while(buf_file[i] != '\n') : (i += 1) {
+                val[v_i] = buf_file[i];
+                v_i += 1;
+            }
+
+            try f.cur_lib.?.addPair(key[0..k_i - 1], val[0..v_i], 0, false, false);
+            k_i = 0;
+            v_i = 0;
+            @memset(&key, 0);
+            @memset(&val, 0);
+        }
     }
 
     fn parseLib(self: *fs, lib_buf: []u8) !void {

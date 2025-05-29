@@ -270,7 +270,15 @@ fn main_menu(f: *fs.fs) !void {
                 try stdout.print("Enter path to file: ", .{});
                 var path_buf: [256]u8 = .{0} ** 256;
                 const path_bytes = try stdin.read(&path_buf);
-
+                try stdout.print("Enter file name: ", .{});
+                var file_name_buf: [128]u8 = .{0} ** 128;
+                const file_name_bytes = try stdin.read(&file_name_buf);
+                try stdout.print("Enter new lib name: ", .{});
+                var lib_name_buf: [128]u8 = .{0} ** 128;
+                const lib_name_bytes = try stdin.read(&lib_name_buf);
+                try f.createLibFromFile(path_buf[0..path_bytes - 1], file_name_buf[0..file_name_bytes - 1], lib_name_buf[0..lib_name_bytes - 1]);
+                try stdout.print("Created lib from: {s}/{s}, name: {s}\n", .{path_buf[0..path_bytes - 1]
+                    , file_name_buf[0..lib_name_bytes - 1], lib_name_buf[0..lib_name_bytes - 1]});
             },
             .CHANGE_LIB_PATH => {
                 try stdout.print("Your current path to word dir - {s}\n", .{f.cfg.lib_path.?});
