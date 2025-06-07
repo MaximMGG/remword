@@ -30,6 +30,7 @@ pub const Screen = struct {
         _ = c.start_color();
         _ = c.init_pair(1, c.COLOR_WHITE, c.COLOR_BLACK);
         _ = c.init_pair(2, c.COLOR_BLACK, c.COLOR_WHITE);
+        _ = c.refresh();
     }
 
     pub fn deinit(self: *Screen) void {
@@ -38,17 +39,16 @@ pub const Screen = struct {
     }
 
     pub fn menu(self: *Screen, m: *Menu) void {
-        _ = c.clear();
         self.y = 0;
         self.x = 0;
-        _ = c.printw("%s", m.name.ptr);
         var l: u32 = 1;
         var ch: c_int = 0;
         while(true) {
+            _ = c.clear();
             switch(ch) {
                 c.KEY_DOWN,
                 'j' => {
-                    if (m.content.len > m.pos) {
+                    if (m.content.len - 1 > m.pos) {
                         m.pos += 1;
                     }
                 },
@@ -58,6 +58,7 @@ pub const Screen = struct {
                         m.pos -= 1;
                     }
                 },
+                c.KEY_F(1),
                 c.KEY_ENTER => {
                     return;
                 },
@@ -66,6 +67,8 @@ pub const Screen = struct {
                 }
             }
 
+            _ = c.printw("%s\n", m.name.ptr);
+            self.y = 0;
             for(m.content) |line| {
                 if (self.y == m.pos) {
                     _ = c.attron(c.COLOR_PAIR(2));
@@ -79,8 +82,10 @@ pub const Screen = struct {
                 l += 1;
                 self.y += 1;
             }
+            l = 1;
+            _ = c.refresh();
+            ch = c.getch();
         }
-        ch = c.getch();
     }
 
 
