@@ -42,14 +42,6 @@ pub const Lib = struct {
     lib_name: []const u8,
     changed: bool = false,
 
-    pub fn showContent(self: *Lib) !void {
-        var index: usize = 1;
-        for (self.lib_content.items) |i| {
-            try stdout.print("{d}. {s} - {s}\n", .{index, i.key, i.val});
-            index += 1;
-        }
-    }
-
     pub fn addPair(self: *Lib, word: []const u8, translation: []const u8, well_known: f32, known_translation: bool, known_how_write: bool) !void {
         const w = try Word.create(self.allocator, word, translation, well_known, known_translation, known_how_write);
         try self.lib_content.append(w);
