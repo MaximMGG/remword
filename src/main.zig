@@ -56,9 +56,46 @@ fn main_menu_opt() void{
     // try stdout.print("6 - EXIT\n", .{});
 }
 
-
-fn menu_process(f: *fs.fs, s: *screen.Screen) void {
+fn lib_menu_process(s: *screen.Screen, f: *fs.fs) void {
     _ = f;
+    var lib_menu = screen.Menu{.name = "Lib options", 
+                    .content = &[_][]const u8 {
+                        "ADD WORD",
+                        "DELETE WORD",
+                        "SHOW LIB CONTENT",
+                        "CHANGE TRANSLATION",
+                        "BAK TO MAIN MENU"
+                    }, .pos = 0};
+
+    while (true) {
+        s.menu(&lib_menu);
+        switch(lib_menu.pos) {
+            0 => {
+
+            },
+            1 => {
+
+            },
+            2 => {
+
+            },
+            3 => {
+
+            },
+            4 => {
+                if (f.cur_lib.?.changed) {
+                    if (try s.askQuestion("Do you want to save lib changes?")) {
+                        try f.writeLib();
+                    } 
+                }
+                return;
+            },
+            else => {}
+        }
+    }
+}
+
+fn menu_process(f: *fs.fs, s: *screen.Screen) !void {
     var main_menu = screen.Menu{.name = "Main options", 
                     .content = &[_][]const u8 {
                         "SELECT LIB",
@@ -69,10 +106,39 @@ fn menu_process(f: *fs.fs, s: *screen.Screen) void {
                         "EXIT"
                     }, .pos = 0};
 
-    s.menu(&main_menu);
+    while(true) {
+        s.menu(&main_menu);
+        switch(main_menu.pos) {
+            0 => {
+                const lib_select = s.showLibs(&f.cfg.libs.?);
+                try f.selectLib(lib_select);
+            },
+            1 => {
+
+            },
+            2 => {
+
+            },
+            3 => {
+
+            },
+            4 => {
+
+            },
+            5 => {
+                if (f.cur_lib.?.changed) {
+                    if (try s.askQuestion("Do you want to save lib changes?")) {
+                        try f.writeLib();
+                    } 
+                }
+                return;
+            },
+            else => {}
+        }
+
+    }
 
     // while(true) {
-    //
     // }
 }
 
@@ -85,7 +151,7 @@ pub fn main() !void {
     try f.readCfg();
     var main_screen = screen.Screen{};
     try main_screen.init();
-    menu_process(&f, &main_screen);
+    try menu_process(&f, &main_screen);
     main_screen.deinit();
 }
 

@@ -58,6 +58,7 @@ pub const Screen = struct {
                         m.pos -= 1;
                     }
                 },
+                '\n',
                 c.KEY_F(1),
                 c.KEY_ENTER => {
                     return;
@@ -88,6 +89,11 @@ pub const Screen = struct {
         }
     }
 
+    pub fn showLibs(self: *Screen, l: *std.ArrayList([]const u8)) u32 {
+        var libs_menu = Menu{.name = "Lib select", .content = l.items, .pos = 0};
+        self.menu(&libs_menu);
+        return libs_menu.pos;
+    }
 
     pub fn readInput(self: *Screen) !void {
         const y_pos = self.max_y - @as(c_int, 10);
@@ -109,7 +115,25 @@ pub const Screen = struct {
             self.read_buffer_len += 1;
             ch = c.getch();
         }
-
         _ = c.delwin(read_win);
+    }
+
+
+    pub fn askQuestion(self: *Screen, question: []const u8) !bool {
+        const y_pos = self.max_y - 10;
+        const x_pos = @divTrunc(self.max_x, 4);
+        const y_size = 3;
+        const x_size = @divTrunc(self.max_x, 2);
+        const question_screen = c.newwin(y_pos, x_pos, y_size, x_size) orelse return error.NewWinError;
+        _ = c.wprintw(question_screen, "%s y(yes)/n(no):> ", question.ptr);
+        var ch: c_int = 0;
+        while(ch != @as(u8, 'y') or ch != @as(u8, 'n')) : (ch = c.getch()){
+
+        }
+        if (ch == @as(u8, 'y')) {
+            return true;
+        } else {
+            return false;
+        }
     }
 };
