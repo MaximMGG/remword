@@ -95,27 +95,44 @@ pub const Screen = struct {
         return libs_menu.pos;
     }
 
-    pub fn readInput(self: *Screen) !void {
-        const y_pos = self.max_y - @as(c_int, 10);
-        const x_pos: i32 = @intFromFloat(@as(f32, @floatFromInt(self.max_y)) * 0.25);
+    pub fn readInput(self: *Screen, header: []const u8) !void {
+        const y_pos = self.max_y - 10;
+        const x_pos = @divTrunc(self.max_x, 4);
         const y_size = 3;
         const x_size = @divTrunc(self.max_x, 2);
-        const read_win = c.newwin(y_pos, x_pos, y_size, x_size) orelse return error.NewwinError;
+        const read_win = c.newwin(y_size, x_size, y_pos, x_pos) orelse return error.NewwinError;
         _ = c.box(read_win, 0, 0);
+        _ = c.mvwprintw(read_win, 0, 1, "%s", header);
+        _ = c.wmove(read_win, 1, 1);
         _ = c.wrefresh(read_win);
+        _ = c.echo();
         _ = c.keypad(read_win, true);
 
         @memset(&self.read_buffer, 0);
         self.read_buffer_len = 0;
 
         c = c.wprintw(read_win, ">: ");
-        var ch: c_int = c.getch();
-        while(ch != c.KEY_ENTER) {
+        var ch: c_int = c.wgetch(read_win);
+        while(ch != c.KEY_ENTER or ch != @as(u8, '\n')) {
             self.read_buffer[self.read_buffer_len] = @as(u8, @intCast(ch));
             self.read_buffer_len += 1;
-            ch = c.getch();
+            ch = c.wgetch(read_win);
         }
+
+        _ = c.wclear();
+
+        _ = c.wborder(read_win,
+                    @as(c.chtype, ' '),
+                    @as(c.chtype, ' '),
+                    @as(c.chtype, ' '),
+                    @as(c.chtype, ' '),
+                    @as(c.chtype, ' '),
+                    @as(c.chtype, ' '),
+                    @as(c.chtype, ' '),
+                    @as(c.chtype, ' '));
+        _ = c.wrefresh(read_win);
         _ = c.delwin(read_win);
+        _ = c.noecho();
     }
 
 
@@ -135,5 +152,10 @@ pub const Screen = struct {
         } else {
             return false;
         }
+    }
+
+
+    pub fn readPair() [2][]u8{
+
     }
 };

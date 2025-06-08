@@ -71,7 +71,8 @@ fn lib_menu_process(s: *screen.Screen, f: *fs.fs) void {
         s.menu(&lib_menu);
         switch(lib_menu.pos) {
             0 => {
-
+                s.readPair();
+                f.cur_lib.?.addPair();
             },
             1 => {
 
