@@ -2,6 +2,7 @@ const std = @import("std");
 const fs = @import("fs.zig");
 const unistd = @cImport({
     @cInclude("unistd.h");
+    @cInclude("locale.h");
 });
 const screen = @import("screen.zig");
 
@@ -56,8 +57,7 @@ fn main_menu_opt() void{
     // try stdout.print("6 - EXIT\n", .{});
 }
 
-fn lib_menu_process(s: *screen.Screen, f: *fs.fs) void {
-    _ = f;
+fn lib_menu_process(s: *screen.Screen, f: *fs.fs) !void {
     var lib_menu = screen.Menu{.name = "Lib options", 
                     .content = &[_][]const u8 {
                         "ADD WORD",
@@ -71,8 +71,8 @@ fn lib_menu_process(s: *screen.Screen, f: *fs.fs) void {
         s.menu(&lib_menu);
         switch(lib_menu.pos) {
             0 => {
-                s.readPair();
-                f.cur_lib.?.addPair();
+                try s.readPair();
+                try f.cur_lib.?.addPair(&s.word, &s.translation, 0, false, false);
             },
             1 => {
 
@@ -113,6 +113,7 @@ fn menu_process(f: *fs.fs, s: *screen.Screen) !void {
             0 => {
                 const lib_select = s.showLibs(&f.cfg.libs.?);
                 try f.selectLib(lib_select);
+                try lib_menu_process(s, f);
             },
             1 => {
 
@@ -145,6 +146,7 @@ fn menu_process(f: *fs.fs, s: *screen.Screen) !void {
 
 
 pub fn main() !void {
+    _ = unistd.setlocale(unistd.LC_CTYPE, "");
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var f = fs.fs{ .allocator = allocator, .cfg = .{} };

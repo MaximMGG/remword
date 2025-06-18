@@ -1,6 +1,7 @@
 const std = @import("std");
 const c = @cImport({
     @cInclude("ncurses.h");
+    @cInclude("locale.h");
 });
 const lib = @import("lib.zig");
 
@@ -19,11 +20,14 @@ pub const Screen = struct {
     x: c_int = 0,
     read_buffer: [4096]u8 = .{0} ** 4096,
     read_buffer_len: u32 = 0,
+    word: [128]u8 = .{0} ** 128,
+    translation: [256]u8 = .{0} ** 256,
 
     pub fn init(self: *Screen) !void {
         self.screen = c.initscr() orelse return error.InitScrError;
         self.max_y = c.getmaxy(self.screen);
         self.max_x = c.getmaxx(self.screen);
+        _ = c.setlocale(c.LC_CTYPE, "");
         _ = c.noecho();
         _ = c.raw();
         _ = c.keypad(self.screen, true);
@@ -102,7 +106,7 @@ pub const Screen = struct {
         const x_size = @divTrunc(self.max_x, 2);
         const read_win = c.newwin(y_size, x_size, y_pos, x_pos) orelse return error.NewwinError;
         _ = c.box(read_win, 0, 0);
-        _ = c.mvwprintw(read_win, 0, 1, "%s", header);
+        _ = c.mvwprintw(read_win, 0, 1, "%s", header.ptr);
         _ = c.wmove(read_win, 1, 1);
         _ = c.wrefresh(read_win);
         _ = c.echo();
@@ -111,15 +115,22 @@ pub const Screen = struct {
         @memset(&self.read_buffer, 0);
         self.read_buffer_len = 0;
 
-        c = c.wprintw(read_win, ">: ");
+        _ = c.wprintw(read_win, ">: ");
         var ch: c_int = c.wgetch(read_win);
         while(ch != c.KEY_ENTER or ch != @as(u8, '\n')) {
+            if (ch == 0o407) {
+                self.read_buffer[self.read_buffer_len] = @as(u8, 0);
+                self.read_buffer_len -= 1;
+                const read_y = c.getcury(read_win);
+                const read_x = c.getcurx(read_win);
+                _ = c.wmove(read_win, read_y, read_x - 1);
+            }
             self.read_buffer[self.read_buffer_len] = @as(u8, @intCast(ch));
             self.read_buffer_len += 1;
             ch = c.wgetch(read_win);
         }
 
-        _ = c.wclear();
+        _ = c.wclear(read_win);
 
         _ = c.wborder(read_win,
                     @as(c.chtype, ' '),
@@ -154,8 +165,13 @@ pub const Screen = struct {
         }
     }
 
-
-    pub fn readPair() [2][]u8{
-
+    pub fn readPair(self: *Screen) !void{
+        @memset(&self.word, 0);
+        @memset(&self.translation, 0);
+        try self.readInput("Enter word");
+        @memcpy(self.word[0..self.read_buffer_len], self.read_buffer[0..self.read_buffer_len]);
+        try self.readInput("Enter tranlation or '.' for going to reversoContext");
+        @memcpy(self.translation[0..self.read_buffer_len], 
+            self.read_buffer[0..self.read_buffer_len]);
     }
 };
