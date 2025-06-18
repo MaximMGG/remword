@@ -146,7 +146,6 @@ fn menu_process(f: *fs.fs, s: *screen.Screen) !void {
 
 
 pub fn main() !void {
-    _ = unistd.setlocale(unistd.LC_CTYPE, "");
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var f = fs.fs{ .allocator = allocator, .cfg = .{} };

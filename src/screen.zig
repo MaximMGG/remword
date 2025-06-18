@@ -1,6 +1,6 @@
 const std = @import("std");
 const c = @cImport({
-    @cInclude("ncurses.h");
+    @cInclude("ncursesw/ncurses.h");
     @cInclude("locale.h");
 });
 const lib = @import("lib.zig");
@@ -27,7 +27,7 @@ pub const Screen = struct {
         self.screen = c.initscr() orelse return error.InitScrError;
         self.max_y = c.getmaxy(self.screen);
         self.max_x = c.getmaxx(self.screen);
-        _ = c.setlocale(c.LC_CTYPE, "");
+        _ = c.setlocale(c.LC_ALL, "ru_RU.UTF-8");
         _ = c.noecho();
         _ = c.raw();
         _ = c.keypad(self.screen, true);
@@ -117,17 +117,18 @@ pub const Screen = struct {
 
         _ = c.wprintw(read_win, ">: ");
         var ch: c_int = c.wgetch(read_win);
-        while(ch != c.KEY_ENTER or ch != @as(u8, '\n')) {
-            if (ch == 0o407) {
-                self.read_buffer[self.read_buffer_len] = @as(u8, 0);
+        while(ch != c.KEY_ENTER and ch != @as(u8, '\n')) : (ch = c.wgetch(read_win)) {
+            if (ch == c.KEY_BACKSPACE) {
+                self.read_buffer[self.read_buffer_len - 1] = @as(u8, 0);
                 self.read_buffer_len -= 1;
                 const read_y = c.getcury(read_win);
                 const read_x = c.getcurx(read_win);
-                _ = c.wmove(read_win, read_y, read_x - 1);
+                _ = c.waddch(read_win, @as(u8, ' '));
+                _ = c.wmove(read_win, read_y, read_x);
+                continue;
             }
             self.read_buffer[self.read_buffer_len] = @as(u8, @intCast(ch));
             self.read_buffer_len += 1;
-            ch = c.wgetch(read_win);
         }
 
         _ = c.wclear(read_win);
